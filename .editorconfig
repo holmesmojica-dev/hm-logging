@@ -13,3 +13,6 @@ csharp_indent_switch_labels = true
 
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_property = false:suggestion
+
+# Roslyn analyzers
+dotnet_analyzer_diagnostic.severity = warning
