@@ -1,16 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
 
-  <ItemGroup>
-    <Folder Include="Abstractions\" />
-    <Folder Include="Models\" />
-    <Folder Include="Core\" />
-    <Folder Include="Configuration\" />
-  </ItemGroup>
+		<Version>0.1.0</Version>
+
+		<PackageId>Hm.Logging</PackageId>
+		<Authors>Holmes Mojica</Authors>
+		<Company>HM</Company>
+
+		<Description>Reusable .NET logging library following clean architecture principles.</Description>
+
+		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Folder Include="Abstractions\" />
+		<Folder Include="Models\" />
+		<Folder Include="Core\" />
+		<Folder Include="Configuration\" />
+	</ItemGroup>
 
 </Project>
+
