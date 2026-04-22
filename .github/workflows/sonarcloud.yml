@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -26,7 +27,7 @@ jobs:
       - name: Add .NET tools to PATH
         run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
 
-      - name: Begin analysis
+      - name: Begin SonarCloud analysis
         run: >
           dotnet sonarscanner begin
           /k:"hm-logging"
@@ -38,9 +39,9 @@ jobs:
         run: dotnet restore Hm.Logging.sln
 
       - name: Build
-        run: dotnet build Hm.Logging.sln --no-restore
+        run: dotnet build Hm.Logging.sln --configuration Release --no-restore --no-incremental
 
-      - name: End analysis
+      - name: End SonarCloud analysis
         run: >
           dotnet sonarscanner end
           /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
