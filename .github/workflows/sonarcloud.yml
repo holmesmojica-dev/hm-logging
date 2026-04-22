@@ -34,12 +34,18 @@ jobs:
           /o:"holmesmojica-dev"
           /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
           /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.verbose=true
 
       - name: Restore
         run: dotnet restore Hm.Logging.sln
 
       - name: Build
-        run: dotnet build Hm.Logging.sln --configuration Release --no-restore --no-incremental
+        run: >
+          dotnet build Hm.Logging.sln
+          --configuration Release
+          --no-restore
+          --no-incremental
+          /p:UseSharedCompilation=false
 
       - name: End SonarCloud analysis
         run: >
