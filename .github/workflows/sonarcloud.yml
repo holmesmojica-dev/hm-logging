@@ -8,6 +8,7 @@ on:
 
 jobs:
   sonarcloud:
+    name: Build and analyze
     runs-on: ubuntu-latest
 
     steps:
@@ -24,28 +25,22 @@ jobs:
       - name: Install SonarScanner
         run: dotnet tool install --global dotnet-sonarscanner
 
-      - name: Add .NET tools to PATH
+      - name: Add tools to PATH
         run: echo "$HOME/.dotnet/tools" >> $GITHUB_PATH
-
-      - name: Begin SonarCloud analysis
-        run: >
-          dotnet sonarscanner begin
-          /k:"hm-logging"
-          /o:"holmesmojica-dev"
-          /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
-          /d:sonar.host.url="https://sonarcloud.io"
-          /d:sonar.verbose=true
 
       - name: Restore
         run: dotnet restore Hm.Logging.sln
 
-      - name: Build
+      - name: Begin SonarCloud analysis
         run: >
-          dotnet build Hm.Logging.sln
-          --configuration Release
-          --no-restore
-          --no-incremental
-          /p:UseSharedCompilation=false
+          dotnet sonarscanner begin
+          /k:"holmesmojica-dev_hm-logging"
+          /o:"holmesmojica-dev"
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          /d:sonar.host.url="https://sonarcloud.io"
+
+      - name: Build
+        run: dotnet build Hm.Logging.sln --configuration Release --no-restore
 
       - name: End SonarCloud analysis
         run: >
