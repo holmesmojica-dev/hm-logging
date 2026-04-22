@@ -1,8 +1,13 @@
-﻿namespace Hm.Logging.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace Hm.Logging.Models
 {
-    internal sealed class LogEntry
+    public class LogEntry
     {
+        [Required]
         public string Message { get; set; } = string.Empty;
-        public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+
+        [Required]
+        public DateTime Timestamp { get; set; }
     }
 }
