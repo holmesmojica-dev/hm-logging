@@ -1,0 +1,39 @@
+name: SonarCloud Analysis
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  sonarcloud:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install SonarScanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Begin analysis
+        run: >
+          dotnet sonarscanner begin
+          /k:"hm-logging"
+          /o:"holmesmojica-dev"
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+          /d:sonar.host.url="https://sonarcloud.io"
+
+      - name: Build
+        run: dotnet build
+
+      - name: End analysis
+        run: dotnet sonarscanner end
+          /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
