@@ -22,10 +22,17 @@
 		<AnalysisLevel>latest-recommended</AnalysisLevel>
 		<TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 	</PropertyGroup>
+
+	<PropertyGroup>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
 	
 	<ItemGroup>
-		<Folder Include="Core\" />
 		<Folder Include="Configuration\" />
+	</ItemGroup>
+	
+	<ItemGroup>
+	  <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
 	</ItemGroup>
 
 </Project>
