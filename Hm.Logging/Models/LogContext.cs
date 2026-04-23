@@ -32,7 +32,7 @@
     /// 
     /// In this example, the log entry will automatically include the Source, TraceId, and Metadata from the context.
     /// </remarks>
-    public class LogContext
+    public record LogContext
     {
         /// <summary>
         /// Logical source of the logs (e.g., service or application name).
