@@ -3,9 +3,72 @@
 namespace Hm.Logging.Models
 {
     /// <summary>
-    /// Represents a structured log entry used for logging events across the system.
-    /// Designed to be compatible with modern observability and monitoring platforms.
+    /// Represents a structured log entry describing a specific event in the system.
     /// </summary>
+    /// <remarks>
+    /// A <see cref="LogEntry"/> contains the data specific to a single log event,
+    /// such as the message, severity level, and optional contextual overrides.
+    ///
+    /// <para>
+    /// When a <see cref="LogContext"/> is set via the logger, its values are applied
+    /// as defaults to all log entries.
+    /// </para>
+    ///
+    /// <para>
+    /// If a property is defined in both <see cref="LogContext"/> and <see cref="LogEntry"/>,
+    /// the value in <see cref="LogEntry"/> takes precedence.
+    /// </para>
+    ///
+    /// <para><b>Override example:</b></para>
+    /// <code>
+    /// logger.SetContext(new LogContext
+    /// {
+    ///     Source = "AuthService",
+    ///     TraceId = "abc-123"
+    /// });
+    ///
+    /// await logger.LogAsync(new LogEntry
+    /// {
+    ///     Message = "User login",
+    ///     TraceId = "override-999"
+    /// });
+    /// </code>
+    ///
+    /// <para>
+    /// Result:
+    /// </para>
+    /// <code>
+    /// {
+    ///   "message": "User login",
+    ///   "source": "AuthService",
+    ///   "traceId": "override-999"
+    /// }
+    /// </code>
+    ///
+    /// <para><b>Metadata merging:</b></para>
+    /// <code>
+    /// // Context
+    /// Metadata = { ["service"] = "auth" }
+    ///
+    /// // Entry
+    /// Metadata = { ["userId"] = "123" }
+    /// </code>
+    ///
+    /// <para>
+    /// Result:
+    /// </para>
+    /// <code>
+    /// {
+    ///   "service": "auth",
+    ///   "userId": "123"
+    /// }
+    /// </code>
+    ///
+    /// <para>
+    /// In case of duplicate keys, values from <see cref="LogEntry"/> override
+    /// those from <see cref="LogContext"/>.
+    /// </para>
+    /// </remarks>
     public class LogEntry
     {
         /// <summary>
@@ -48,6 +111,7 @@ namespace Hm.Logging.Models
         /// <summary>
         /// Additional structured data for the log entry.
         /// Enables advanced filtering and querying in monitoring tools.
+        /// Values are merged with those from <see cref="LogContext"/> if present.
         /// </summary>
         public Dictionary<string, object>? Metadata { get; init; }
     }
