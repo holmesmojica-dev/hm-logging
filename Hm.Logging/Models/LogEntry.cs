@@ -69,7 +69,7 @@ namespace Hm.Logging.Models
     /// those from <see cref="LogContext"/>.
     /// </para>
     /// </remarks>
-    public class LogEntry
+    public record LogEntry
     {
         /// <summary>
         /// Human-readable message describing the log event.
@@ -114,5 +114,81 @@ namespace Hm.Logging.Models
         /// Values are merged with those from <see cref="LogContext"/> if present.
         /// </summary>
         public Dictionary<string, object>? Metadata { get; init; }
+
+
+        /// <summary>
+        /// Creates a new <see cref="LogEntry"/> instance with the specified message.
+        /// </summary>
+        /// <param name="message">
+        /// The message describing the log event. This value cannot be null, empty, or whitespace.
+        /// </param>
+        /// <param name="level">
+        /// The log level indicating the severity of the event. Defaults to <see cref="LogLevel.Information"/>
+        /// </param>
+        /// <returns>
+        /// A new <see cref="LogEntry"/> instance initialized with the provided message,
+        /// the default <see cref="LogLevel.Information"/> level, and the current UTC timestamp.
+        /// </returns>
+        /// <exception cref="ArgumentException">
+        /// Thrown when <paramref name="message"/> is null, empty, or whitespace.
+        /// </exception>
+        /// <remarks>
+        /// This method provides a flexible way to create log entries with default values
+        /// and perform basic validation.
+        ///
+        /// For common scenarios, it is recommended to use helper methods such as
+        /// <see cref="Info(string)"/>, <see cref="Warning(string)"/>, or
+        /// <see cref="Error(string, Exception)"/>, which simplify log creation for specific levels.
+        ///
+        /// Additional properties such as <see cref="Source"/>,
+        /// <see cref="TraceId"/>, and <see cref="Metadata"/> can be
+        /// optionally set after creation or enriched automatically by the logging pipeline.
+        /// </remarks>
+        public static LogEntry Create(string message, LogLevel level = LogLevel.Information)
+        {
+            return string.IsNullOrWhiteSpace(message)
+                ? throw new ArgumentException("Log message cannot be empty.", nameof(message))
+                : new LogEntry
+                {
+                    Message = message.Trim(),
+                    Level = level,
+                    Timestamp = DateTime.UtcNow
+                };
+        }
+
+        /// <summary>
+        /// Creates a log entry with Information level.
+        /// </summary>
+        /// <param name="message">The log message.</param>
+        /// <returns>A new <see cref="LogEntry"/> instance.</returns>
+        public static LogEntry Info(string message)
+        {
+            return Create(message);
+        }
+
+        /// <summary>
+        /// Creates a log entry with Warning level.
+        /// </summary>
+        /// <param name="message">The log message.</param>
+        /// <returns>A new <see cref="LogEntry"/> instance.</returns>
+        public static LogEntry Warning(string message)
+        {
+            return Create(message) with { Level = LogLevel.Warning };
+        }
+
+        /// <summary>
+        /// Creates a log entry with Error level and exception details.
+        /// </summary>
+        /// <param name="message">The log message.</param>
+        /// <param name="ex">The exception to include.</param>
+        /// <returns>A new <see cref="LogEntry"/> instance.</returns>
+        public static LogEntry Error(string message, Exception ex)
+        {
+            return Create(message) with
+            {
+                Level = LogLevel.Error,
+                Exception = ex.ToString()
+            };
+        }
     }
 }
