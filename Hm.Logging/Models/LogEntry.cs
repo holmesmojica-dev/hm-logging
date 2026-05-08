@@ -1,5 +1,6 @@
 ﻿using System.Collections.Immutable;
 using Hm.Logging.Abstractions;
+using Hm.Logging.Enums;
 
 namespace Hm.Logging.Models
 {
@@ -147,14 +148,14 @@ namespace Hm.Logging.Models
         /// </remarks>
         public static LogEntry Create(string message, LogLevel level = LogLevel.Information)
         {
-            return string.IsNullOrWhiteSpace(message)
-                ? throw new ArgumentException("Log message cannot be empty.", nameof(message))
-                : new LogEntry
-                {
-                    Message = message.Trim(),
-                    Level = level,
-                    Timestamp = DateTime.UtcNow
-                };
+            ArgumentException.ThrowIfNullOrWhiteSpace(message, nameof(message));
+
+            return new LogEntry
+            {
+                Message = message.Trim(),
+                Level = level,
+                Timestamp = DateTime.UtcNow
+            };
         }
 
         /// <summary>
