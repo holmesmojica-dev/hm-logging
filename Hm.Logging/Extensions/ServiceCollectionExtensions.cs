@@ -30,7 +30,8 @@ namespace Hm.Logging.Extensions
 
             return services
                 .AddSingleton(options)
-                .AddScoped<ITraceContext, ActivityTraceContext>();
+                .AddScoped<ITraceContext, ActivityTraceContext>()
+                .AddScoped<ILoggerService, LoggerService>();
         }
     }
 }
