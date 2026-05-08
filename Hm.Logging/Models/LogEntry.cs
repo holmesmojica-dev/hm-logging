@@ -1,4 +1,5 @@
-﻿using Hm.Logging.Abstractions;
+﻿using System.Collections.Immutable;
+using Hm.Logging.Abstractions;
 
 namespace Hm.Logging.Models
 {
@@ -113,7 +114,7 @@ namespace Hm.Logging.Models
         /// Enables advanced filtering and querying in monitoring tools.
         /// Values are merged with those from <see cref="LogContext"/> if present.
         /// </summary>
-        public Dictionary<string, object>? Metadata { get; init; }
+        public ImmutableDictionary<string, object>? Metadata { get; init; }
 
 
         /// <summary>
