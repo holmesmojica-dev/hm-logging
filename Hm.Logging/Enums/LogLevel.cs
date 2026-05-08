@@ -1,4 +1,4 @@
-﻿namespace Hm.Logging.Models
+﻿namespace Hm.Logging.Enums
 {
     /// <summary>
     /// Defines the severity level of a log entry.

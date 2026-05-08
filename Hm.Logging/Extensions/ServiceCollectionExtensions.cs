@@ -15,7 +15,7 @@ namespace Hm.Logging.Extensions
         public static IServiceCollection AddHmLogging(this IServiceCollection services)
         {
             return services
-                .AddSingleton<ITraceContext, ActivityTraceContext>();
+                .AddScoped<ITraceContext, ActivityTraceContext>();
         }
     }
 }

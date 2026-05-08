@@ -1,4 +1,6 @@
-﻿namespace Hm.Logging.Models
+﻿using System.Collections.Immutable;
+
+namespace Hm.Logging.Models
 {
     /// <summary>
     /// Represents contextual information shared across multiple log entries
@@ -47,6 +49,6 @@
         /// <summary>
         /// Additional contextual metadata applied to all log entries.
         /// </summary>
-        public Dictionary<string, object>? Metadata { get; init; }
+        public ImmutableDictionary<string, object>? Metadata { get; init; }
     }
 }

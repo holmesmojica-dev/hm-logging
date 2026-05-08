@@ -3,78 +3,86 @@
 namespace Hm.Logging.Abstractions
 {
     /// <summary>
-    /// Defines the contract for logging structured events.
-    /// Implementations may store logs in files, databases, or external systems.
+    /// Defines the contract for structured logging operations.
     /// </summary>
+    /// <remarks>
+    /// Implementations are responsible for:
+    /// <list type="bullet">
+    /// <item>
+    /// <description>Applying contextual information from active scopes.</description>
+    /// </item>
+    /// <item>
+    /// <description>Validating and normalizing log entries.</description>
+    /// </item>
+    /// <item>
+    /// <description>Persisting logs through the configured infrastructure.</description>
+    /// </item>
+    /// </list>
+    ///
+    /// <para>
+    /// Logging scopes allow shared contextual information such as
+    /// <see cref="LogContext.Source"/>,
+    /// <see cref="LogContext.TraceId"/>,
+    /// and shared metadata to be automatically applied
+    /// to all logs created within the current execution flow.
+    /// </para>
+    ///
+    /// <para>
+    /// When values exist in both <see cref="LogContext"/> and <see cref="LogEntry"/>,
+    /// the values defined in <see cref="LogEntry"/> take precedence.
+    /// </para>
+    /// </remarks>
     public interface ILoggerService
     {
         /// <summary>
-        /// Sets the logging context to be applied to all subsequent log entries
-        /// within the current execution flow.
+        /// Begins a logging scope using the specified contextual information.
         /// </summary>
         /// <param name="context">
-        /// The <see cref="LogContext"/> containing shared values such as Source,
-        /// TraceId, and Metadata.
+        /// The contextual information to apply to all logs created
+        /// within the current execution flow.
         /// </param>
+        /// <returns>
+        /// An <see cref="IDisposable"/> that ends the scope when disposed.
+        /// </returns>
         /// <remarks>
-        /// The context provides default values that will be automatically applied
-        /// to each <see cref="LogEntry"/>.
+        /// Scopes are intended to avoid repeating shared information
+        /// such as trace identifiers, sources, or common metadata.
         ///
         /// <para>
-        /// When a property exists in both <see cref="LogContext"/> and <see cref="LogEntry"/>,
-        /// the value defined in <see cref="LogEntry"/> takes precedence.
+        /// Example:
         /// </para>
         ///
-        /// <para>
-        /// For example:
-        /// </para>
         /// <code>
-        /// logger.SetContext(new LogContext
+        /// using (logger.BeginScope(new LogContext
         /// {
         ///     Source = "AuthService",
         ///     TraceId = "abc-123"
-        /// });
-        ///
-        /// await logger.LogAsync(new LogEntry
+        /// }))
         /// {
-        ///     Message = "Special operation",
-        ///     TraceId = "override-999"
-        /// });
-        /// </code>
-        ///
-        /// <para>
-        /// Resulting log:
-        /// </para>
-        /// <code>
-        /// {
-        ///   "message": "Special operation",
-        ///   "source": "AuthService",
-        ///   "traceId": "override-999"
+        ///     await logger.LogAsync(LogEntry.Info("User login started"));
         /// }
         /// </code>
         ///
         /// <para>
-        /// Metadata from both context and entry will be merged. If the same key exists,
-        /// the value from <see cref="LogEntry"/> overrides the one from <see cref="LogContext"/>.
-        /// </para>
-        ///
-        /// <para>
-        /// This method is typically called once per execution scope
-        /// (e.g., per HTTP request, background job, or transaction).
-        /// </para>
-        ///
-        /// <para>
-        /// Internally, the context is stored per execution flow, ensuring that
-        /// concurrent operations do not interfere with each other.
+        /// The scope applies only to the current execution flow
+        /// and is automatically removed when disposed.
         /// </para>
         /// </remarks>
-        void SetContext(LogContext context);
+        IDisposable BeginScope(LogContext context);
+
 
         /// <summary>
         /// Logs a structured log entry asynchronously.
         /// </summary>
-        /// <param name="entry">The log entry containing all relevant data.</param>
-        /// <param name="cancellationToken">Token to cancel the operation.</param>
+        /// <param name="entry">
+        /// The log entry containing the event information.
+        /// </param>
+        /// <param name="cancellationToken">
+        /// Token used to cancel the operation.
+        /// </param>
+        /// <returns>
+        /// A task representing the asynchronous logging operation.
+        /// </returns>
         Task LogAsync(LogEntry entry, CancellationToken cancellationToken = default);
     }
 }
