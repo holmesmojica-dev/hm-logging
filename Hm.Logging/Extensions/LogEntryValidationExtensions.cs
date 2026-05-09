@@ -1,5 +1,5 @@
-﻿using System.Collections.Immutable;
-using Hm.Logging.Abstractions;
+﻿using Hm.Logging.Abstractions;
+using Hm.Logging.Core.Metadata;
 using Hm.Logging.Models;
 
 namespace Hm.Logging.Extensions
@@ -104,7 +104,7 @@ namespace Hm.Logging.Extensions
                         ?? Guid.NewGuid().ToString(),
 
                 Exception = Normalize(logEntry.Exception),
-                Metadata = Normalize(logEntry.Metadata)
+                Metadata = logEntry.Metadata.EnsureValidMetadata()
             };
 
             return normalizedLogEntry;
@@ -114,46 +114,6 @@ namespace Hm.Logging.Extensions
         private static string? Normalize(string? value)
         {
             return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-        }
-
-
-        private static object? Normalize(object value)
-        {
-            return value is string str ? Normalize(str) : value;
-        }
-
-
-        /// <summary>
-        /// Normalizes metadata by cleaning keys and values and removing invalid entries.
-        /// </summary>
-        private static ImmutableDictionary<string, object>? Normalize(ImmutableDictionary<string, object>? metadata)
-        {
-            if (metadata is null || metadata.Count == 0)
-            {
-                return null;
-            }
-
-            ImmutableDictionary<string, object>.Builder builder = ImmutableDictionary.CreateBuilder<string, object>();
-
-            foreach (KeyValuePair<string, object> kvp in metadata)
-            {
-                string? key = Normalize(kvp.Key);
-                object? value = Normalize(kvp.Value);
-
-                if (string.IsNullOrWhiteSpace(key))
-                {
-                    continue;
-                }
-
-                if (value is null)
-                {
-                    continue;
-                }
-
-                builder[key] = value;
-            }
-
-            return builder.Count > 0 ? builder.ToImmutable() : null;
         }
     }
 }
