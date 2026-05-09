@@ -41,7 +41,24 @@ namespace Hm.Logging.Core
             LogEntry mergedEntry = MergeContext(entry, _currentContext.Value);
             LogEntry normalizedEntry = mergedEntry.EnsureValid(_traceContext);
 
+            ValidateMessageLength(normalizedEntry.Message);
+
             await _logRepository.SaveAsync(normalizedEntry, cancellationToken).ConfigureAwait(false);
+        }
+
+
+        private void ValidateMessageLength(string message)
+        {
+            if (_options.MaxMessageLength == 0)
+            {
+                return;
+            }
+
+            if (message.Length > _options.MaxMessageLength)
+            {
+                throw new InvalidOperationException(
+                    $"Log message exceeds the maximum allowed length of {_options.MaxMessageLength} characters.");
+            }
         }
 
 
