@@ -149,7 +149,7 @@ namespace Hm.Logging.Models
         /// </remarks>
         public static LogEntry Create(string message, LogLevel level = LogLevel.Information)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(message, nameof(message));
+            ArgumentException.ThrowIfNullOrWhiteSpace(message);
 
             return new LogEntry
             {

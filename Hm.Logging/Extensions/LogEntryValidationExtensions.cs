@@ -91,7 +91,7 @@ namespace Hm.Logging.Extensions
         {
             ArgumentNullException.ThrowIfNull(logEntry);
             ArgumentNullException.ThrowIfNull(traceContext);
-            ArgumentException.ThrowIfNullOrWhiteSpace(logEntry.Message, nameof(logEntry.Message));
+            ArgumentException.ThrowIfNullOrWhiteSpace(logEntry.Message);
 
             LogEntry normalizedLogEntry = logEntry with
             {
