@@ -19,13 +19,14 @@
     /// </remarks>
     internal static class ReservedMetadataKeys
     {
-        public static readonly HashSet<string> Keys =
-        [
+        public static IReadOnlySet<string> Keys { get; } =
+        new HashSet<string>(StringComparer.Ordinal)
+        {
             "TraceId",
             "Timestamp",
             "Level",
             "Message",
             "Source"
-        ];
+        };
     }
 }

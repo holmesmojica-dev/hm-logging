@@ -6,10 +6,10 @@ using Hm.Logging.Models;
 
 namespace Hm.Logging.Core
 {
-    internal sealed class LoggerService(ILogRepository logRepository, ITraceContext traceContext, LoggingOptions options) : ILoggerService
+    internal sealed class LoggerService(IEnumerable<ILogProvider> logProviders, ITraceContext traceContext, LoggingOptions options) : ILoggerService
     {
-        private readonly ILogRepository _logRepository = logRepository
-            ?? throw new ArgumentNullException(nameof(logRepository));
+        private readonly IReadOnlyCollection<ILogProvider> _logProviders = logProviders?.ToArray()
+            ?? throw new ArgumentNullException(nameof(logProviders));
 
         private readonly ITraceContext _traceContext = traceContext
             ?? throw new ArgumentNullException(nameof(traceContext));
@@ -24,8 +24,10 @@ namespace Hm.Logging.Core
         {
             ArgumentNullException.ThrowIfNull(context);
 
+            LogContext? previousContext = _currentContext.Value;
             _currentContext.Value = context;
-            return new LoggingScope(() => _currentContext.Value = null);
+
+            return new LoggingScope(() => _currentContext.Value = previousContext);
         }
 
 
@@ -43,7 +45,10 @@ namespace Hm.Logging.Core
 
             ValidateMessageLength(normalizedEntry.Message);
 
-            await _logRepository.SaveAsync(normalizedEntry, cancellationToken).ConfigureAwait(false);
+            foreach (ILogProvider logProvider in _logProviders)
+            {
+                await logProvider.WriteAsync(normalizedEntry, cancellationToken).ConfigureAwait(false);
+            }
         }
 
 
@@ -56,8 +61,8 @@ namespace Hm.Logging.Core
 
             if (message.Length > _options.MaxMessageLength)
             {
-                throw new InvalidOperationException(
-                    $"Log message exceeds the maximum allowed length of {_options.MaxMessageLength} characters.");
+                throw new ArgumentException(
+                    $"Log message exceeds the maximum allowed length of {_options.MaxMessageLength} characters.", nameof(message));
             }
         }
 

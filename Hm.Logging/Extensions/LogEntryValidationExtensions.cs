@@ -39,7 +39,7 @@ namespace Hm.Logging.Extensions
     ///
     /// <para>
     /// It is intended to be used internally by the logging pipeline (e.g., <c>LoggerService</c>)
-    /// and should be invoked before persisting or emitting log entries.
+    /// and should be invoked before dispatching log entries to logging providers.
     /// </para>
     /// </remarks>
     public static class LogEntryValidationExtensions

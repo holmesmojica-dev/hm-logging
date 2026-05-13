@@ -15,7 +15,7 @@ namespace Hm.Logging.Abstractions
     /// <description>Validating and normalizing log entries.</description>
     /// </item>
     /// <item>
-    /// <description>Persisting logs through the configured infrastructure.</description>
+    /// <description>Dispatching log entries through the configured logging providers.</description>
     /// </item>
     /// </list>
     ///
@@ -67,6 +67,35 @@ namespace Hm.Logging.Abstractions
         /// The scope applies only to the current execution flow
         /// and is automatically removed when disposed.
         /// </para>
+        ///
+        /// <para>
+        /// Nested scopes are supported.
+        ///
+        /// When multiple scopes are created within the same execution flow,
+        /// inner scopes temporarily override contextual values while preserving
+        /// the parent scope state.
+        ///
+        /// Once the inner scope is disposed, the previous scope context is restored.
+        /// </para>
+        ///
+        /// <code>
+        /// using (logger.BeginScope(new LogContext
+        /// {
+        ///     Source = "OrderService"
+        /// }))
+        /// {
+        ///     using (logger.BeginScope(new LogContext
+        ///     {
+        ///         TraceId = "child-trace"
+        ///     }))
+        ///     {
+        ///         await logger.LogAsync(LogEntry.Info("Processing child operation"));
+        ///     }
+        ///
+        ///     // The original Source context is restored here.
+        ///     await logger.LogAsync(LogEntry.Info("Processing parent operation"));
+        /// }
+        /// </code>
         /// </remarks>
         IDisposable BeginScope(LogContext context);
 
