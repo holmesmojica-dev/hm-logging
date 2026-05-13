@@ -16,20 +16,20 @@ namespace Hm.Logging.Models
     /// A context is typically set once and reused across multiple logs:
     /// 
     /// <code>
-    /// logger.SetContext(new LogContext
+    /// using (logger.BeginScope(new LogContext
     /// {
     ///     Source = "AuthService",
     ///     TraceId = "abc-123",
-    ///     Metadata = new Dictionary&lt;string, object&gt;
-    ///     {
-    ///         ["userId"] = "u-001"
-    ///     }
-    /// });
-    /// 
-    /// await logger.LogAsync(new LogEntry
+    ///     Metadata = ImmutableDictionary&lt;string, object&gt;
+    ///         .Empty
+    ///         .Add("userId", "u-001")
+    /// }))
     /// {
-    ///     Message = "User login started"
-    /// });
+    ///     await logger.LogAsync(new LogEntry
+    ///     {
+    ///         Message = "User login started"
+    ///     });
+    /// }
     /// </code>
     /// 
     /// In this example, the log entry will automatically include the Source, TraceId, and Metadata from the context.

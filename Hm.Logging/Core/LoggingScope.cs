@@ -1,5 +1,8 @@
 ﻿namespace Hm.Logging.Core
 {
+    /// <summary>
+    /// Represents a disposable logging scope.
+    /// </summary>
     internal sealed class LoggingScope(Action onDispose) : IDisposable
     {
         private readonly Action _onDispose = onDispose

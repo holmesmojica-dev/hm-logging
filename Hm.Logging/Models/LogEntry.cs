@@ -23,17 +23,18 @@ namespace Hm.Logging.Models
     ///
     /// <para><b>Override example:</b></para>
     /// <code>
-    /// logger.SetContext(new LogContext
+    /// using (logger.BeginScope(new LogContext
     /// {
     ///     Source = "AuthService",
     ///     TraceId = "abc-123"
-    /// });
-    ///
-    /// await logger.LogAsync(new LogEntry
+    /// }))
     /// {
-    ///     Message = "User login",
-    ///     TraceId = "override-999"
-    /// });
+    ///     await logger.LogAsync(new LogEntry
+    ///     {
+    ///         Message = "User login",
+    ///         TraceId = "override-999"
+    ///     });
+    /// }
     /// </code>
     ///
     /// <para>
@@ -125,11 +126,11 @@ namespace Hm.Logging.Models
         /// The message describing the log event. This value cannot be null, empty, or whitespace.
         /// </param>
         /// <param name="level">
-        /// The log level indicating the severity of the event. Defaults to <see cref="LogLevel.Information"/>
+        /// The log level indicating the severity of the event. Defaults to <see cref="LogLevel.Information"/>.
         /// </param>
         /// <returns>
         /// A new <see cref="LogEntry"/> instance initialized with the provided message,
-        /// the default <see cref="LogLevel.Information"/> level, and the current UTC timestamp.
+        /// specified log level and the current UTC timestamp.
         /// </returns>
         /// <exception cref="ArgumentException">
         /// Thrown when <paramref name="message"/> is null, empty, or whitespace.
@@ -186,6 +187,8 @@ namespace Hm.Logging.Models
         /// <returns>A new <see cref="LogEntry"/> instance.</returns>
         public static LogEntry Error(string message, Exception ex)
         {
+            ArgumentNullException.ThrowIfNull(ex);
+
             return Create(message) with
             {
                 Level = LogLevel.Error,

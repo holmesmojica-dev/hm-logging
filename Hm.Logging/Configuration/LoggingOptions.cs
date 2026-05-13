@@ -18,7 +18,7 @@ namespace Hm.Logging.Configuration
         /// </summary>
         /// <remarks>
         /// Messages exceeding this limit will cause validation failure
-        /// before being processed or persisted by the logging pipeline.
+        /// before being processed or dispatched by the logging pipeline.
         ///
         /// <para>
         /// A value of <c>0</c> disables message length validation,

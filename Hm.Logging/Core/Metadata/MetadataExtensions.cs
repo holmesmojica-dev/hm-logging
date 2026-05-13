@@ -90,7 +90,7 @@ namespace Hm.Logging.Core.Metadata
         /// </para>
         /// 
         /// <list type="bullet">
-        /// <item><description>Primitive numeric types</description></item>
+        /// <item><description>Primitive value types</description></item>
         /// <item><description><see cref="string"/></description></item>
         /// <item><description><see cref="decimal"/></description></item>
         /// <item><description><see cref="Guid"/></description></item>
@@ -128,7 +128,7 @@ namespace Hm.Logging.Core.Metadata
             foreach ((string key, object value) in metadata)
             {
                 string? normalizedKey = NormalizeKey(key);
-                object? normalizedValue = NormalizeValue(value);
+                object normalizedValue = NormalizeValue(value);
 
                 if (normalizedKey is null || normalizedValue is null)
                 {
@@ -158,11 +158,9 @@ namespace Hm.Logging.Core.Metadata
             }
         }
 
-        private static object? NormalizeValue(object value)
+        private static object NormalizeValue(object value)
         {
-            return value is null
-                ? null
-                : !IsSupportedType(value)
+            return !IsSupportedType(value)
                 ? throw new InvalidOperationException($"Metadata type '{value.GetType().Name}' is not supported.")
                 : value switch
                 {
