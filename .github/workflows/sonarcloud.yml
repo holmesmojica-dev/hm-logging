@@ -38,9 +38,19 @@ jobs:
           /o:"holmesmojica-dev"
           /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
           /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.cs.opencover.reportsPaths="**/TestResults/coverage.opencover.xml"
 
       - name: Build
         run: dotnet build Hm.Logging.sln --configuration Release --no-restore
+
+      - name: Test with coverage
+        run: >
+          dotnet test tests/Hm.Logging.Tests/Hm.Logging.Tests.csproj
+          --configuration Release
+          --no-build
+          /p:CollectCoverage=true
+          /p:CoverletOutputFormat=opencover
+          /p:CoverletOutput=TestResults/
 
       - name: End SonarCloud analysis
         run: >
