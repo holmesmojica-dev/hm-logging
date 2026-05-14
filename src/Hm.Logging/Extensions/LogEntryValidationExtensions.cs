@@ -93,6 +93,9 @@ public static class LogEntryValidationExtensions
         ArgumentNullException.ThrowIfNull(traceContext);
         ArgumentException.ThrowIfNullOrWhiteSpace(logEntry.Message);
 
+        if (!Enum.IsDefined(logEntry.Level))
+            throw new ArgumentOutOfRangeException(nameof(logEntry), logEntry.Level, "Invalid log level.");
+
         LogEntry normalizedLogEntry = logEntry with
         {
             Message = logEntry.Message.Trim(),
