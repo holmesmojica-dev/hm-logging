@@ -25,7 +25,7 @@ namespace Hm.Logging.Models
     /// using (logger.BeginScope(new LogContext
     /// {
     ///     Source = "AuthService",
-    ///     TraceId = "abc-123",
+    ///     TraceId = "trace-123",
     ///     CorrelationId = "corr-checkout-001"
     /// }))
     /// {
