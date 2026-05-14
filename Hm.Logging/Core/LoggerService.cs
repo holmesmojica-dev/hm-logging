@@ -72,6 +72,7 @@ namespace Hm.Logging.Core
             return context is null ? entry : (entry with
             {
                 TraceId = entry.TraceId ?? context.TraceId,
+                CorrelationId = entry.CorrelationId ?? context.CorrelationId,
                 Source = entry.Source ?? context.Source,
                 Metadata = MergeMetadata(context.Metadata, entry.Metadata)
             });

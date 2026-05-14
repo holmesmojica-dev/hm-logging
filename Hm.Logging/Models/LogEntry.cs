@@ -1,5 +1,4 @@
 ﻿using System.Collections.Immutable;
-using Hm.Logging.Abstractions;
 using Hm.Logging.Enums;
 
 namespace Hm.Logging.Models
@@ -26,13 +25,15 @@ namespace Hm.Logging.Models
     /// using (logger.BeginScope(new LogContext
     /// {
     ///     Source = "AuthService",
-    ///     TraceId = "abc-123"
+    ///     TraceId = "trace-123",
+    ///     CorrelationId = "corr-checkout-001"
     /// }))
     /// {
     ///     await logger.LogAsync(new LogEntry
     ///     {
     ///         Message = "User login",
-    ///         TraceId = "override-999"
+    ///         TraceId = "override-999",
+    ///         CorrelationId = "corr-payment-002"
     ///     });
     /// }
     /// </code>
@@ -44,7 +45,8 @@ namespace Hm.Logging.Models
     /// {
     ///   "message": "User login",
     ///   "source": "AuthService",
-    ///   "traceId": "override-999"
+    ///   "traceId": "override-999",
+    ///   "correlationId": "corr-payment-002"
     /// }
     /// </code>
     ///
@@ -98,11 +100,25 @@ namespace Hm.Logging.Models
         public string? Source { get; init; }
 
         /// <summary>
-        /// Correlation identifier used to trace requests across distributed systems.
-        /// It is recommended to populate this value using an <see cref="ITraceContext"/>
-        /// implementation or any distributed tracing mechanism (e.g., Activity).
+        /// Trace identifier associated with the current execution flow.
+        /// Typically used for technical request tracing and diagnostics.
         /// </summary>
+        /// <remarks>
+        /// This value is commonly populated from distributed tracing systems
+        /// such as <see cref="System.Diagnostics.Activity"/>.
+        /// </remarks>
         public string? TraceId { get; init; }
+
+        /// <summary>
+        /// Identifier used to correlate related operations
+        /// across multiple services, requests, or workflows.
+        /// </summary>
+        /// <remarks>
+        /// Unlike <see cref="TraceId"/>, which represents the current
+        /// execution trace, CorrelationId is typically propagated
+        /// across distributed boundaries and business operations.
+        /// </remarks>
+        public string? CorrelationId { get; init; }
 
         /// <summary>
         /// Serialized exception details, if any.
@@ -143,9 +159,13 @@ namespace Hm.Logging.Models
         /// <see cref="Info(string)"/>, <see cref="Warning(string)"/>, or
         /// <see cref="Error(string, Exception)"/>, which simplify log creation for specific levels.
         ///
+        /// <para>
         /// Additional properties such as <see cref="Source"/>,
-        /// <see cref="TraceId"/>, and <see cref="Metadata"/> can be
+        /// <see cref="TraceId"/>,
+        /// <see cref="CorrelationId"/>,
+        /// and <see cref="Metadata"/> can be
         /// optionally set after creation or enriched automatically by the logging pipeline.
+        /// </para>
         /// </remarks>
         public static LogEntry Create(string message, LogLevel level = LogLevel.Information)
         {

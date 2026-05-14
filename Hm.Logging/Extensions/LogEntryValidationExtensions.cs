@@ -103,6 +103,8 @@ namespace Hm.Logging.Extensions
                         ?? traceContext.GetTraceId()
                         ?? Guid.NewGuid().ToString(),
 
+                CorrelationId = Normalize(logEntry.CorrelationId),
+
                 Exception = Normalize(logEntry.Exception),
                 Metadata = logEntry.Metadata.EnsureValidMetadata()
             };

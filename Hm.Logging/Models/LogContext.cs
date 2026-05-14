@@ -19,7 +19,8 @@ namespace Hm.Logging.Models
     /// using (logger.BeginScope(new LogContext
     /// {
     ///     Source = "AuthService",
-    ///     TraceId = "abc-123",
+    ///     TraceId = "trace-123",
+    ///     CorrelationId = "corr-checkout-001",
     ///     Metadata = ImmutableDictionary&lt;string, object&gt;
     ///         .Empty
     ///         .Add("userId", "u-001")
@@ -42,9 +43,21 @@ namespace Hm.Logging.Models
         public string? Source { get; init; }
 
         /// <summary>
-        /// Correlation identifier for distributed tracing.
+        /// Trace identifier associated with the current execution flow.
         /// </summary>
         public string? TraceId { get; init; }
+
+        /// <summary>
+        /// Identifier used to correlate related operations
+        /// across multiple services, requests, or workflows.
+        /// </summary>
+        /// <remarks>
+        /// CorrelationId values defined within a logging scope
+        /// are automatically propagated to all log entries
+        /// created within the current execution flow,
+        /// unless explicitly overridden by the log entry.
+        /// </remarks>
+        public string? CorrelationId { get; init; }
 
         /// <summary>
         /// Additional contextual metadata applied to all log entries.
