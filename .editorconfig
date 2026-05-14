@@ -1,18 +1,64 @@
 root = true
 
 [*.cs]
+
+# Indentation
 indent_style = space
 indent_size = 4
 
+# Using directives
 dotnet_sort_system_directives_first = true
 
-csharp_new_line_before_open_brace = all
+# Namespace style
+csharp_style_namespace_declarations = file_scoped:warning
 
+# Braces & formatting
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_members_in_object_initializers = true
+
+# Preserve compact modern syntax
+csharp_preserve_single_line_blocks = true
+csharp_preserve_single_line_statements = true
+
+# Indentation rules
 csharp_indent_case_contents = true
 csharp_indent_switch_labels = true
 
+# Qualification preferences
 dotnet_style_qualification_for_field = false:suggestion
 dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
 
-# Roslyn analyzers
+# Braces preference
+csharp_prefer_braces = false:suggestion
+
+# Expression-bodied members
+csharp_style_expression_bodied_methods = when_on_single_line:suggestion
+csharp_style_expression_bodied_properties = true:suggestion
+csharp_style_expression_bodied_accessors = true:suggestion
+csharp_style_expression_bodied_constructors = false:suggestion
+
+# Var preferences
+csharp_style_var_for_built_in_types = false:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_var_elsewhere = false:suggestion
+
+# Pattern matching & modern C#
+csharp_style_pattern_matching_over_is_with_cast_check = true:suggestion
+csharp_style_pattern_matching_over_as_with_null_check = true:suggestion
+csharp_style_prefer_switch_expression = true:suggestion
+csharp_style_prefer_not_pattern = true:suggestion
+
+# Null checking
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_null_propagation = true:suggestion
+
+# Parentheses
+dotnet_style_parentheses_in_arithmetic_binary_operators = always_for_clarity:suggestion
+dotnet_style_parentheses_in_other_binary_operators = always_for_clarity:suggestion
+dotnet_style_parentheses_in_other_operators = never_if_unnecessary:suggestion
+dotnet_style_parentheses_in_relational_binary_operators = always_for_clarity:suggestion
+
+# Analyzer severity
 dotnet_analyzer_diagnostic.severity = warning
