@@ -23,13 +23,15 @@ namespace Hm.Logging.Abstractions
     /// Logging scopes allow shared contextual information such as
     /// <see cref="LogContext.Source"/>,
     /// <see cref="LogContext.TraceId"/>,
+    /// <see cref="LogContext.CorrelationId"/>,
     /// and shared metadata to be automatically applied
     /// to all logs created within the current execution flow.
     /// </para>
     ///
     /// <para>
     /// When values exist in both <see cref="LogContext"/> and <see cref="LogEntry"/>,
-    /// the values defined in <see cref="LogEntry"/> take precedence.
+    /// the values defined in <see cref="LogEntry"/> take precedence,
+    /// including TraceId, CorrelationId, Source, and Metadata values.
     /// </para>
     /// </remarks>
     public interface ILoggerService
@@ -56,7 +58,8 @@ namespace Hm.Logging.Abstractions
         /// using (logger.BeginScope(new LogContext
         /// {
         ///     Source = "AuthService",
-        ///     TraceId = "abc-123"
+        ///     TraceId = "trace-123",
+        ///     CorrelationId = "corr-checkout-001"
         /// }))
         /// {
         ///     await logger.LogAsync(LogEntry.Info("User login started"));

@@ -23,6 +23,7 @@
         new HashSet<string>(StringComparer.Ordinal)
         {
             "TraceId",
+            "CorrelationId",
             "Timestamp",
             "Level",
             "Message",
