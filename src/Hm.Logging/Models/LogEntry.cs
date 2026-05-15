@@ -89,8 +89,12 @@ public record LogEntry
     public LogLevel Level { get; init; } = LogLevel.Information;
 
     /// <summary>
-    /// Timestamp of when the log was created in UTC.
+    /// Timestamp associated with the log event.
     /// </summary>
+    /// <remarks>
+    /// The logging pipeline normalizes timestamps to UTC
+    /// during log validation and enrichment.
+    /// </remarks>
     public DateTime Timestamp { get; init; } = DateTime.UtcNow;
 
     /// <summary>
@@ -157,7 +161,7 @@ public record LogEntry
     ///
     /// For common scenarios, it is recommended to use helper methods such as
     /// <see cref="Info(string)"/>, <see cref="Warning(string)"/>, or
-    /// <see cref="Error(string, Exception)"/>, which simplify log creation for specific levels.
+    /// <see cref="Error(string, Exception?)"/>, which simplify log creation for specific levels.
     ///
     /// <para>
     /// Additional properties such as <see cref="Source"/>,
@@ -180,14 +184,16 @@ public record LogEntry
     }
 
     /// <summary>
-    /// Creates a log entry with Information level.
+    /// Creates a log entry with Information level
+    /// using the provided message.
     /// </summary>
     /// <param name="message">The log message.</param>
     /// <returns>A new <see cref="LogEntry"/> instance.</returns>
     public static LogEntry Info(string message) => Create(message);
 
     /// <summary>
-    /// Creates a log entry with Warning level.
+    /// Creates a log entry with Warning level
+    /// using the provided message.
     /// </summary>
     /// <param name="message">The log message.</param>
     /// <returns>A new <see cref="LogEntry"/> instance.</returns>
@@ -195,19 +201,24 @@ public record LogEntry
         => Create(message) with { Level = LogLevel.Warning };
 
     /// <summary>
-    /// Creates a log entry with Error level and exception details.
+    /// Creates a log entry with Error level
+    /// and optional exception details.
     /// </summary>
-    /// <param name="message">The log message.</param>
-    /// <param name="ex">The exception to include.</param>
-    /// <returns>A new <see cref="LogEntry"/> instance.</returns>
-    public static LogEntry Error(string message, Exception ex)
+    /// <param name="message">
+    /// The log message.
+    /// </param>
+    /// <param name="ex">
+    /// Optional exception information associated with the log event.
+    /// </param>
+    /// <returns>
+    /// A new <see cref="LogEntry"/> instance.
+    /// </returns>
+    public static LogEntry Error(string message, Exception? ex = null)
     {
-        ArgumentNullException.ThrowIfNull(ex);
-
         return Create(message) with
         {
             Level = LogLevel.Error,
-            Exception = ex.ToString()
+            Exception = ex?.ToString()
         };
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Hm.Logging.Models;
+using Hm.Logging.Observability;
 
 namespace Hm.Logging.Abstractions;
 
@@ -104,16 +105,45 @@ public interface ILoggerService
 
 
     /// <summary>
-    /// Logs a structured log entry asynchronously.
+    /// Logs an entry asynchronously through the configured logging pipeline.
     /// </summary>
     /// <param name="entry">
-    /// The log entry containing the event information.
+    /// Log entry to be processed.
+    /// </param>
+    /// <param name="providerFailureCallback">
+    /// Optional callback invoked when a logging provider fails during execution.
     /// </param>
     /// <param name="cancellationToken">
-    /// Token used to cancel the operation.
+    /// Token used to propagate cancellation notifications.
     /// </param>
     /// <returns>
     /// A task representing the asynchronous logging operation.
     /// </returns>
-    Task LogAsync(LogEntry entry, CancellationToken cancellationToken = default);
+    /// <remarks>
+    /// Provider execution failures are handled internally
+    /// to preserve resilient logging behavior.
+    ///
+    /// <para>
+    /// Remaining providers continue executing independently
+    /// even when individual providers fail.
+    /// </para>
+    ///
+    /// <para>
+    /// When a provider failure callback is supplied,
+    /// provider failure diagnostics are exposed to the consumer.
+    /// </para>
+    ///
+    /// <para>
+    /// The callback is invoked individually for each provider failure.
+    /// </para>
+    ///
+    /// <para>
+    /// Exceptions thrown by the callback are not intercepted
+    /// by the logging pipeline and propagate to the caller.
+    /// </para>
+    /// </remarks>
+    Task LogAsync(
+        LogEntry entry,
+        ProviderFailureCallback? providerFailureCallback = null,
+        CancellationToken cancellationToken = default);
 }

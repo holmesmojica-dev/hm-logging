@@ -99,12 +99,16 @@ public static class LogEntryValidationExtensions
         LogEntry normalizedLogEntry = logEntry with
         {
             Message = logEntry.Message.Trim(),
-            Timestamp = logEntry.Timestamp == default ? DateTime.UtcNow : logEntry.Timestamp,
+
+            Timestamp = logEntry.Timestamp == default
+                ? DateTime.UtcNow
+                : logEntry.Timestamp.ToUniversalTime(),
 
             Source = Normalize(logEntry.Source),
+
             TraceId = Normalize(logEntry.TraceId)
-                    ?? traceContext.GetTraceId()
-                    ?? Guid.NewGuid().ToString(),
+                ?? traceContext.GetTraceId()
+                ?? Guid.NewGuid().ToString(),
 
             CorrelationId = Normalize(logEntry.CorrelationId),
 

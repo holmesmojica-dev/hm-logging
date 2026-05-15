@@ -23,11 +23,12 @@ public sealed class LoggerServiceTests
         var entry = LogEntry.Info("Test message");
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().HaveCount(1);
-
         provider.Entries[0].Message.Should().Be("Test message");
         provider.Entries[0].Level.Should().Be(LogLevel.Information);
     }
@@ -40,7 +41,8 @@ public sealed class LoggerServiceTests
         ILoggerService logger = CreateLoggerService(providers: provider);
 
         // Act
-        Func<Task> action = async () => await logger.LogAsync(null!);
+        Func<Task> action = async () =>
+            await logger.LogAsync(null!);
 
         // Assert
         await action.Should()
@@ -63,7 +65,9 @@ public sealed class LoggerServiceTests
         var entry = LogEntry.Info("Ignored message");
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().BeEmpty();
@@ -78,10 +82,13 @@ public sealed class LoggerServiceTests
         var entry = LogEntry.Warning("Warning message");
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().ContainSingle();
+
         provider.Entries[0].Message.Should().Be("Warning message");
         provider.Entries[0].Level.Should().Be(LogLevel.Warning);
     }
@@ -93,16 +100,20 @@ public sealed class LoggerServiceTests
         FakeLogProvider provider1 = new();
         FakeLogProvider provider2 = new();
 
-        ILoggerService logger = CreateLoggerService(providers: [provider1, provider2]);
+        ILoggerService logger = CreateLoggerService(
+            providers: [provider1, provider2]);
 
         var entry = LogEntry.Info("Multi-provider message");
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider1.Entries.Should().ContainSingle();
         provider2.Entries.Should().ContainSingle();
+
         provider1.Entries[0].Message.Should().Be("Multi-provider message");
         provider2.Entries[0].Message.Should().Be("Multi-provider message");
     }
@@ -120,7 +131,9 @@ public sealed class LoggerServiceTests
         };
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().ContainSingle();
@@ -136,7 +149,9 @@ public sealed class LoggerServiceTests
         var entry = LogEntry.Info("Trace test");
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().ContainSingle();
@@ -156,10 +171,12 @@ public sealed class LoggerServiceTests
             },
             provider);
 
-        var entry = LogEntry.Info("This message is definitely too long");
+        var entry = LogEntry.Info(
+            "This message is definitely too long");
 
         // Act
-        Func<Task> action = async () => await logger.LogAsync(entry);
+        Func<Task> action = async () =>
+            await logger.LogAsync(entry);
 
         // Assert
         await action.Should()
@@ -182,32 +199,115 @@ public sealed class LoggerServiceTests
         var entry = LogEntry.Info(new string('A', 5000));
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().ContainSingle();
     }
 
     [Fact]
-    public async Task LogAsync_ShouldNotSwallowProviderExceptions()
+    public async Task LogAsync_ShouldContinueExecutingRemainingProviders_WhenProviderFails()
     {
         // Arrange
-        FakeLogProvider provider = new()
+        FakeLogProvider failingProvider = new()
         {
             ThrowException = true
         };
 
-        ILoggerService logger = CreateLoggerService(providers: provider);
+        FakeLogProvider successfulProvider = new();
 
-        var entry = LogEntry.Error("Provider failure test",
-                                   new InvalidOperationException("Failure"));
+        ILoggerService logger = CreateLoggerService(
+            providers: [failingProvider, successfulProvider]);
+
+        var entry = LogEntry.Error(
+            "Provider isolation test",
+            new InvalidOperationException("Failure"));
 
         // Act
-        Func<Task> action = async () => await logger.LogAsync(entry, CancellationToken.None);
+        Func<Task> action = async () =>
+            await logger.LogAsync(
+                entry,
+                cancellationToken: CancellationToken.None);
+
+        // Assert
+        await action.Should().NotThrowAsync();
+
+        successfulProvider.Entries.Should().ContainSingle();
+
+        successfulProvider.Entries[0]
+            .Message.Should()
+            .Be("Provider isolation test");
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldInvokeProviderFailureCallback_WhenProviderFails()
+    {
+        // Arrange
+        FakeLogProvider failingProvider = new()
+        {
+            ThrowException = true
+        };
+
+        ILoggerService logger = CreateLoggerService(
+            providers: failingProvider);
+
+        ProviderFailureContext? capturedContext = null;
+
+        var entry = LogEntry.Error(
+            "Callback test",
+            new InvalidOperationException("Failure"));
+
+        // Act
+        await logger.LogAsync(
+            entry,
+            providerFailureCallback: (context, _) =>
+            {
+                capturedContext = context;
+                return Task.CompletedTask;
+            },
+            cancellationToken: CancellationToken.None);
+
+        // Assert
+        capturedContext.Should().NotBeNull();
+        capturedContext.ProviderType.Should().Be(failingProvider.GetType());
+
+        capturedContext.Exception.Should()
+            .BeOfType<InvalidOperationException>();
+
+        capturedContext.LogEntry.Message.Should()
+            .Be("Callback test");
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldPropagateException_WhenProviderFailureCallbackFails()
+    {
+        // Arrange
+        FakeLogProvider failingProvider = new()
+        {
+            ThrowException = true
+        };
+
+        ILoggerService logger = CreateLoggerService(
+            providers: failingProvider);
+
+        var entry = LogEntry.Error("Callback propagation test");
+
+        // Act
+        Func<Task> action = async () =>
+            await logger.LogAsync(
+                entry,
+                providerFailureCallback: (_, _) =>
+                {
+                    throw new InvalidOperationException("Callback failure.");
+                },
+                cancellationToken: CancellationToken.None);
 
         // Assert
         await action.Should()
-            .ThrowAsync<InvalidOperationException>();
+            .ThrowAsync<InvalidOperationException>()
+            .WithMessage("Callback failure.");
     }
 
     [Fact]
@@ -215,6 +315,7 @@ public sealed class LoggerServiceTests
     {
         // Arrange
         FakeLogProvider provider = new();
+
         ILoggerService logger = CreateLoggerService(providers: provider);
 
         LogContext context = new()
@@ -231,7 +332,9 @@ public sealed class LoggerServiceTests
         var entry = LogEntry.Info("Scoped message");
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().ContainSingle();
@@ -243,7 +346,10 @@ public sealed class LoggerServiceTests
         loggedEntry.Source.Should().Be("scope-source");
 
         loggedEntry.Metadata.Should().NotBeNull();
-        loggedEntry.Metadata["Environment"].Should().Be("Production");
+
+        loggedEntry.Metadata["Environment"]
+            .Should()
+            .Be("Production");
     }
 
     [Fact]
@@ -251,6 +357,7 @@ public sealed class LoggerServiceTests
     {
         // Arrange
         FakeLogProvider provider = new();
+
         ILoggerService logger = CreateLoggerService(providers: provider);
 
         LogContext context = new()
@@ -271,7 +378,9 @@ public sealed class LoggerServiceTests
         };
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().ContainSingle();
@@ -288,6 +397,7 @@ public sealed class LoggerServiceTests
     {
         // Arrange
         FakeLogProvider provider = new();
+
         ILoggerService logger = CreateLoggerService(providers: provider);
 
         LogContext context = new()
@@ -308,7 +418,9 @@ public sealed class LoggerServiceTests
         };
 
         // Act
-        await logger.LogAsync(entry, CancellationToken.None);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().ContainSingle();
@@ -317,11 +429,18 @@ public sealed class LoggerServiceTests
 
         loggedEntry.Metadata.Should().NotBeNull();
 
-        loggedEntry.Metadata["Environment"].Should().Be("Production");
-        loggedEntry.Metadata["UserId"].Should().Be("123");
+        loggedEntry.Metadata["Environment"]
+            .Should()
+            .Be("Production");
 
-        // Entry metadata should override context metadata
-        loggedEntry.Metadata["Version"].Should().Be("2.0");
+        loggedEntry.Metadata["UserId"]
+            .Should()
+            .Be("123");
+
+        // Entry metadata overrides scope metadata.
+        loggedEntry.Metadata["Version"]
+            .Should()
+            .Be("2.0");
     }
 
     [Fact]
@@ -329,10 +448,14 @@ public sealed class LoggerServiceTests
     {
         // Arrange
         ILoggerService logger = CreateLoggerService();
+
         var entry = LogEntry.Info("No providers");
 
         // Act
-        Func<Task> action = async () => await logger.LogAsync(entry, CancellationToken.None);
+        Func<Task> action = async () =>
+            await logger.LogAsync(
+                entry,
+                cancellationToken: CancellationToken.None);
 
         // Assert
         await action.Should().NotThrowAsync();
@@ -343,6 +466,7 @@ public sealed class LoggerServiceTests
     {
         // Arrange
         FakeLogProvider provider = new();
+
         ILoggerService logger = CreateLoggerService(providers: provider);
 
         LogEntry originalEntry = new()
@@ -351,16 +475,22 @@ public sealed class LoggerServiceTests
         };
 
         // Act
-        await logger.LogAsync(originalEntry, CancellationToken.None);
+        await logger.LogAsync(
+            originalEntry,
+            cancellationToken: CancellationToken.None);
 
         // Assert
         provider.Entries.Should().ContainSingle();
 
-        originalEntry.Message.Should().Be("   Immutable message   ");
+        originalEntry.Message.Should()
+            .Be("   Immutable message   ");
 
-        provider.Entries[0].Message.Should().Be("Immutable message");
+        provider.Entries[0].Message.Should()
+            .Be("Immutable message");
 
-        provider.Entries[0].Should().NotBeSameAs(originalEntry);
+        provider.Entries[0]
+            .Should()
+            .NotBeSameAs(originalEntry);
     }
 
     [Fact]
@@ -368,6 +498,7 @@ public sealed class LoggerServiceTests
     {
         // Arrange
         CancellationToken receivedToken = default;
+
         Mock<ILogProvider> providerMock = new();
 
         providerMock
@@ -380,31 +511,41 @@ public sealed class LoggerServiceTests
             })
             .Returns(Task.CompletedTask);
 
-        ILoggerService logger = CreateLoggerService(providers: providerMock.Object);
+        ILoggerService logger = CreateLoggerService(
+            providers: providerMock.Object);
 
         var entry = LogEntry.Info("Cancellation token test");
 
         using CancellationTokenSource cancellationTokenSource = new();
 
         // Act
-        await logger.LogAsync(entry, cancellationTokenSource.Token);
+        await logger.LogAsync(
+            entry,
+            cancellationToken: cancellationTokenSource.Token);
 
         // Assert
-        receivedToken.Should().Be(cancellationTokenSource.Token);
+        receivedToken.Should()
+            .Be(cancellationTokenSource.Token);
     }
 
-    private static ILoggerService CreateLoggerService(Action<LoggingOptions>? configure = null,
-                                                      params ILogProvider[] providers)
+    private static ILoggerService CreateLoggerService(
+        Action<LoggingOptions>? configure = null,
+        params ILogProvider[] providers)
     {
         ServiceCollection services = new();
-        services.AddHmLogging(options => configure?.Invoke(options));
+
+        services.AddHmLogging(options =>
+            configure?.Invoke(options));
 
         foreach (ILogProvider provider in providers)
         {
             services.AddSingleton(provider);
         }
 
-        ServiceProvider serviceProvider = services.BuildServiceProvider();
-        return serviceProvider.GetRequiredService<ILoggerService>();
+        ServiceProvider serviceProvider =
+            services.BuildServiceProvider();
+
+        return serviceProvider
+            .GetRequiredService<ILoggerService>();
     }
 }
