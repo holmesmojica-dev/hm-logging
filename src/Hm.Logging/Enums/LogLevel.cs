@@ -12,7 +12,7 @@ public enum LogLevel
     Trace = 0,
 
     /// <summary>
-    /// Information useful for debugging during development.
+    /// Developer-focused diagnostic information useful during troubleshooting and debugging.
     /// </summary>
     Debug = 1,
 

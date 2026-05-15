@@ -17,9 +17,17 @@ internal sealed class LoggingScope(Action onDispose) : IDisposable
     public void Dispose()
     {
         if (_disposed)
+        {
             return;
+        }
 
-        _onDispose.Invoke();
-        _disposed = true;
+        try
+        {
+            _onDispose.Invoke();
+        }
+        finally
+        {
+            _disposed = true;
+        }
     }
 }

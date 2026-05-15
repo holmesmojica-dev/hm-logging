@@ -6,8 +6,10 @@ namespace Hm.Logging.Models;
 /// Represents contextual information shared across multiple log entries
 /// within the same execution flow (e.g., a request, background job, or transaction).
 /// 
-/// This avoids repeating common values such as TraceId, Source, or shared metadata
-/// in every log entry.
+/// <para>
+/// Helps avoid repeating common values such as TraceId,
+/// Source, or shared metadata across multiple log entries.
+/// </para>
 /// 
 /// Values defined in the context act as defaults and can be overridden
 /// by individual <see cref="LogEntry"/> instances.

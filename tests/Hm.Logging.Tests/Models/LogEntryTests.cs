@@ -19,8 +19,12 @@ public sealed class LogEntryTests
         // Assert
         entry.Message.Should().Be(message);
         entry.Level.Should().Be(LogLevel.Information);
-        entry.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
-        entry.Timestamp.Kind.Should().Be(DateTimeKind.Utc);
+
+        entry.Timestamp.Should()
+            .BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+
+        entry.Timestamp.Kind.Should()
+            .Be(DateTimeKind.Utc);
     }
 
     [Fact]
@@ -46,7 +50,8 @@ public sealed class LogEntryTests
         var entry = LogEntry.Create(message);
 
         // Assert
-        entry.Timestamp.Kind.Should().Be(DateTimeKind.Utc);
+        entry.Timestamp.Kind.Should()
+            .Be(DateTimeKind.Utc);
     }
 
     [Fact]
@@ -56,7 +61,8 @@ public sealed class LogEntryTests
         string? message = null;
 
         // Act
-        Action action = () => LogEntry.Create(message!);
+        Action action = () =>
+            LogEntry.Create(message!);
 
         // Assert
         action.Should()
@@ -70,7 +76,8 @@ public sealed class LogEntryTests
         string message = "   ";
 
         // Act
-        Action action = () => LogEntry.Create(message);
+        Action action = () =>
+            LogEntry.Create(message);
 
         // Assert
         action.Should()
@@ -110,7 +117,9 @@ public sealed class LogEntryTests
     {
         // Arrange
         string message = "Error message";
-        Exception exception = new InvalidOperationException("Invalid operation");
+
+        Exception exception =
+            new InvalidOperationException("Invalid operation");
 
         // Act
         var entry = LogEntry.Error(message, exception);
@@ -125,36 +134,84 @@ public sealed class LogEntryTests
     {
         // Arrange
         string message = "Error message";
-        Exception exception = new InvalidOperationException("Invalid operation");
+
+        Exception exception =
+            new InvalidOperationException("Invalid operation");
 
         // Act
         var entry = LogEntry.Error(message, exception);
 
         // Assert
         entry.Exception.Should().NotBeNullOrWhiteSpace();
-        entry.Exception.Should().Contain(nameof(InvalidOperationException));
-        entry.Exception.Should().Contain("Invalid operation");
+
+        entry.Exception.Should()
+            .Contain(nameof(InvalidOperationException));
+
+        entry.Exception.Should()
+            .Contain("Invalid operation");
     }
 
     [Fact]
-    public void Error_ShouldThrow_WhenExceptionIsNull()
+    public void Error_ShouldAllowNullException()
     {
         // Arrange
         string message = "Error message";
 
         // Act
-        Action action = () => LogEntry.Error(message, null!);
+        var entry = LogEntry.Error(message);
 
         // Assert
-        action.Should()
-            .Throw<ArgumentNullException>();
+        entry.Level.Should().Be(LogLevel.Error);
+        entry.Message.Should().Be(message);
+
+        entry.Exception.Should().BeNull();
+    }
+
+    [Fact]
+    public void Error_ShouldTrimMessage()
+    {
+        // Arrange
+        string message = "   Error message   ";
+
+        // Act
+        var entry = LogEntry.Error(message);
+
+        // Assert
+        entry.Message.Should().Be("Error message");
+    }
+
+    [Fact]
+    public void Info_ShouldTrimMessage()
+    {
+        // Arrange
+        string message = "   Information message   ";
+
+        // Act
+        var entry = LogEntry.Info(message);
+
+        // Assert
+        entry.Message.Should().Be("Information message");
+    }
+
+    [Fact]
+    public void Warning_ShouldTrimMessage()
+    {
+        // Arrange
+        string message = "   Warning message   ";
+
+        // Act
+        var entry = LogEntry.Warning(message);
+
+        // Assert
+        entry.Message.Should().Be("Warning message");
     }
 
     [Fact]
     public void HelperMethods_ShouldReturnImmutableInstances()
     {
         // Arrange
-        var originalEntry = LogEntry.Info("Original message");
+        var originalEntry =
+            LogEntry.Info("Original message");
 
         // Act
         LogEntry modifiedEntry = originalEntry with
@@ -163,9 +220,36 @@ public sealed class LogEntryTests
         };
 
         // Assert
-        originalEntry.Message.Should().Be("Original message");
-        modifiedEntry.Message.Should().Be("Modified message");
+        originalEntry.Message.Should()
+            .Be("Original message");
 
-        originalEntry.Should().NotBeSameAs(modifiedEntry);
+        modifiedEntry.Message.Should()
+            .Be("Modified message");
+
+        originalEntry.Should()
+            .NotBeSameAs(modifiedEntry);
+    }
+
+    [Fact]
+    public void Create_ShouldReturnImmutableInstances()
+    {
+        // Arrange
+        var originalEntry =
+            LogEntry.Create("Original message");
+
+        // Act
+        LogEntry modifiedEntry = originalEntry with
+        {
+            Source = "ModifiedSource"
+        };
+
+        // Assert
+        originalEntry.Source.Should().BeNull();
+
+        modifiedEntry.Source.Should()
+            .Be("ModifiedSource");
+
+        originalEntry.Should()
+            .NotBeSameAs(modifiedEntry);
     }
 }

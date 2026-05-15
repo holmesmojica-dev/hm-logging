@@ -41,7 +41,8 @@ public sealed class LogEntryValidationExtensionsTests
         Mock<ITraceContext> traceContextMock = new();
 
         // Act
-        Action action = () => logEntry!.EnsureValid(traceContextMock.Object);
+        Action action = () =>
+            logEntry!.EnsureValid(traceContextMock.Object);
 
         // Assert
         action.Should()
@@ -55,7 +56,8 @@ public sealed class LogEntryValidationExtensionsTests
         var logEntry = LogEntry.Create("Test message");
 
         // Act
-        Action action = () => logEntry.EnsureValid(null!);
+        Action action = () =>
+            logEntry.EnsureValid(null!);
 
         // Assert
         action.Should()
@@ -74,7 +76,8 @@ public sealed class LogEntryValidationExtensionsTests
         Mock<ITraceContext> traceContextMock = new();
 
         // Act
-        Action action = () => logEntry.EnsureValid(traceContextMock.Object);
+        Action action = () =>
+            logEntry.EnsureValid(traceContextMock.Object);
 
         // Assert
         action.Should()
@@ -93,7 +96,8 @@ public sealed class LogEntryValidationExtensionsTests
         Mock<ITraceContext> traceContextMock = new();
 
         // Act
-        Action action = () => logEntry.EnsureValid(traceContextMock.Object);
+        Action action = () =>
+            logEntry.EnsureValid(traceContextMock.Object);
 
         // Assert
         action.Should()
@@ -134,15 +138,25 @@ public sealed class LogEntryValidationExtensionsTests
         LogEntry result = logEntry.EnsureValid(traceContextMock.Object);
 
         // Assert
-        result.Timestamp.Should().BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
-        result.Timestamp.Kind.Should().Be(DateTimeKind.Utc);
+        result.Timestamp.Should()
+            .BeCloseTo(DateTime.UtcNow, TimeSpan.FromSeconds(1));
+
+        result.Timestamp.Kind.Should()
+            .Be(DateTimeKind.Utc);
     }
 
     [Fact]
-    public void EnsureValid_ShouldPreserveTimestamp_WhenTimestampIsAlreadyDefined()
+    public void EnsureValid_ShouldPreserveUtcTimestamp_WhenTimestampIsAlreadyUtc()
     {
         // Arrange
-        DateTime timestamp = new(2025, 01, 01, 10, 00, 00, DateTimeKind.Utc);
+        DateTime timestamp = new(
+            2025,
+            01,
+            01,
+            10,
+            00,
+            00,
+            DateTimeKind.Utc);
 
         LogEntry logEntry = new()
         {
@@ -157,6 +171,38 @@ public sealed class LogEntryValidationExtensionsTests
 
         // Assert
         result.Timestamp.Should().Be(timestamp);
+
+        result.Timestamp.Kind.Should()
+            .Be(DateTimeKind.Utc);
+    }
+
+    [Fact]
+    public void EnsureValid_ShouldNormalizeTimestampToUtc()
+    {
+        // Arrange
+        DateTime localTimestamp = new(
+            2025,
+            01,
+            01,
+            10,
+            00,
+            00,
+            DateTimeKind.Local);
+
+        LogEntry logEntry = new()
+        {
+            Message = "UTC normalization",
+            Timestamp = localTimestamp
+        };
+
+        Mock<ITraceContext> traceContextMock = new();
+
+        // Act
+        LogEntry result = logEntry.EnsureValid(traceContextMock.Object);
+
+        // Assert
+        result.Timestamp.Kind.Should()
+            .Be(DateTimeKind.Utc);
     }
 
     [Fact]
@@ -315,7 +361,8 @@ public sealed class LogEntryValidationExtensionsTests
         Mock<ITraceContext> traceContextMock = new();
 
         // Act
-        Action action = () => logEntry.EnsureValid(traceContextMock.Object);
+        Action action = () =>
+            logEntry.EnsureValid(traceContextMock.Object);
 
         // Assert
         action.Should()
@@ -390,7 +437,7 @@ public sealed class LogEntryValidationExtensionsTests
     }
 
     [Fact]
-    public void EnsureValid_ShouldRemoveInvalidMetadataEntries()
+    public void EnsureValid_ShouldRemoveInvalidMetadataEntries_AfterNormalization()
     {
         // Arrange
         ImmutableDictionary<string, object> metadata =
@@ -411,8 +458,68 @@ public sealed class LogEntryValidationExtensionsTests
 
         // Assert
         result.Metadata.Should().NotBeNull();
+
         result.Metadata.Should().ContainKey("ValidKey");
         result.Metadata.Should().HaveCount(1);
+    }
+
+    [Fact]
+    public void EnsureValid_ShouldRemoveMetadataEntries_WithEmptyStringValues()
+    {
+        // Arrange
+        ImmutableDictionary<string, object> metadata =
+            ImmutableDictionary<string, object>.Empty
+                .Add("EmptyValue", "   ")
+                .Add("ValidKey", "ValidValue");
+
+        LogEntry logEntry = new()
+        {
+            Message = "Test message",
+            Metadata = metadata
+        };
+
+        Mock<ITraceContext> traceContextMock = new();
+
+        // Act
+        LogEntry result = logEntry.EnsureValid(traceContextMock.Object);
+
+        // Assert
+        result.Metadata.Should().NotBeNull();
+
+        result.Metadata.Should()
+            .ContainKey("ValidKey");
+
+        result.Metadata.Should()
+            .NotContainKey("EmptyValue");
+    }
+
+    [Fact]
+    public void EnsureValid_ShouldConvertGuidMetadataValues_ToString()
+    {
+        // Arrange
+        var correlationId = Guid.NewGuid();
+
+        ImmutableDictionary<string, object> metadata =
+            ImmutableDictionary<string, object>.Empty
+                .Add("RequestId", correlationId);
+
+        LogEntry logEntry = new()
+        {
+            Message = "Guid normalization",
+            Metadata = metadata
+        };
+
+        Mock<ITraceContext> traceContextMock = new();
+
+        // Act
+        LogEntry result = logEntry.EnsureValid(traceContextMock.Object);
+
+        // Assert
+        result.Metadata.Should().NotBeNull();
+
+        result.Metadata["RequestId"]
+            .Should()
+            .Be(correlationId.ToString());
     }
 
     [Fact]
@@ -432,7 +539,33 @@ public sealed class LogEntryValidationExtensionsTests
         Mock<ITraceContext> traceContextMock = new();
 
         // Act
-        Action action = () => logEntry.EnsureValid(traceContextMock.Object);
+        Action action = () =>
+            logEntry.EnsureValid(traceContextMock.Object);
+
+        // Assert
+        action.Should()
+            .Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void EnsureValid_ShouldThrow_WhenMetadataContainsReservedKeyIgnoringCase()
+    {
+        // Arrange
+        ImmutableDictionary<string, object> metadata =
+            ImmutableDictionary<string, object>.Empty
+                .Add("traceid", "reserved");
+
+        LogEntry logEntry = new()
+        {
+            Message = "Test message",
+            Metadata = metadata
+        };
+
+        Mock<ITraceContext> traceContextMock = new();
+
+        // Act
+        Action action = () =>
+            logEntry.EnsureValid(traceContextMock.Object);
 
         // Assert
         action.Should()
@@ -456,7 +589,8 @@ public sealed class LogEntryValidationExtensionsTests
         Mock<ITraceContext> traceContextMock = new();
 
         // Act
-        Action action = () => logEntry.EnsureValid(traceContextMock.Object);
+        Action action = () =>
+            logEntry.EnsureValid(traceContextMock.Object);
 
         // Assert
         action.Should()
@@ -475,12 +609,16 @@ public sealed class LogEntryValidationExtensionsTests
         Mock<ITraceContext> traceContextMock = new();
 
         // Act
-        LogEntry normalizedEntry = originalEntry.EnsureValid(traceContextMock.Object);
+        LogEntry normalizedEntry =
+            originalEntry.EnsureValid(traceContextMock.Object);
 
         // Assert
         normalizedEntry.Should().NotBeSameAs(originalEntry);
 
-        originalEntry.Message.Should().Be("   Original message   ");
-        normalizedEntry.Message.Should().Be("Original message");
+        originalEntry.Message.Should()
+            .Be("   Original message   ");
+
+        normalizedEntry.Message.Should()
+            .Be("Original message");
     }
 }

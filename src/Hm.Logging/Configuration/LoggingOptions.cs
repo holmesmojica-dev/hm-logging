@@ -5,6 +5,11 @@ namespace Hm.Logging.Configuration;
 /// <summary>
 /// Represents configuration settings for the logging pipeline.
 /// </summary>
+/// <remarks>
+/// This model contains static logging pipeline configuration
+/// and intentionally excludes runtime execution diagnostics
+/// or provider failure handling behavior.
+/// </remarks>
 public sealed class LoggingOptions
 {
     /// <summary>
@@ -17,7 +22,7 @@ public sealed class LoggingOptions
     /// Gets or sets the maximum allowed length for log messages.
     /// </summary>
     /// <remarks>
-    /// Messages exceeding this limit will cause validation failure
+    /// Messages exceeding this limit will cause an exception
     /// before being processed or dispatched by the logging pipeline.
     ///
     /// <para>

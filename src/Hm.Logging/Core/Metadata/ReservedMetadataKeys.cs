@@ -19,8 +19,12 @@
 /// </remarks>
 internal static class ReservedMetadataKeys
 {
+    /// <summary>
+    /// Gets the collection of reserved metadata keys
+    /// protected by the logging pipeline.
+    /// </summary>
     public static IReadOnlySet<string> Keys { get; } =
-        new HashSet<string>(StringComparer.Ordinal)
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
     {
         "TraceId",
         "CorrelationId",

@@ -15,6 +15,12 @@ namespace Hm.Logging.Abstractions;
 /// </para>
 ///
 /// <para>
+/// Provider failures are isolated internally by the logging pipeline
+/// to prevent individual provider failures from interrupting
+/// execution of remaining providers.
+/// </para>
+///
+/// <para>
 /// Providers should remain lightweight, isolated, and provider-specific,
 /// while the logging pipeline preserves validation, normalization,
 /// contextual enrichment, and orchestration responsibilities.
@@ -29,7 +35,13 @@ public interface ILogProvider
     /// The <see cref="LogEntry"/> to process.
     /// </param>
     /// <param name="cancellationToken">
-    /// Token to cancel the operation.
+    /// Token used to propagate cancellation notifications
+    /// during provider execution.
     /// </param>
+    /// <remarks>
+    /// Implementations should honor cancellation requests whenever possible
+    /// to avoid blocking the logging pipeline during shutdown,
+    /// request cancellation, or background worker termination.
+    /// </remarks>
     Task WriteAsync(LogEntry entry, CancellationToken cancellationToken = default);
 }

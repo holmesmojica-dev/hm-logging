@@ -62,7 +62,7 @@ internal static class MetadataExtensions
     /// <description>Removes invalid or empty entries.</description>
     /// </item>
     /// <item>
-    /// <description>Converts enum values to their string representation.</description>
+    /// <description>Converts enum and <see cref="Guid"/> values to their string representation.</description>
     /// </item>
     /// <item>
     /// <description>Preserves original object types whenever possible.</description>
@@ -119,17 +119,21 @@ internal static class MetadataExtensions
     public static ImmutableDictionary<string, object>? EnsureValidMetadata(this ImmutableDictionary<string, object>? metadata)
     {
         if (metadata is null || metadata.Count == 0)
+        {
             return null;
+        }
 
         ImmutableDictionary<string, object>.Builder builder = ImmutableDictionary.CreateBuilder<string, object>();
 
         foreach ((string key, object value) in metadata)
         {
             string? normalizedKey = NormalizeKey(key);
-            object normalizedValue = NormalizeValue(value);
+            object? normalizedValue = NormalizeValue(value);
 
             if (normalizedKey is null || normalizedValue is null)
+            {
                 continue;
+            }
 
             ValidateReservedKey(normalizedKey);
             builder[normalizedKey] = normalizedValue;
@@ -141,21 +145,31 @@ internal static class MetadataExtensions
     }
 
     private static string? NormalizeKey(string key)
-        => string.IsNullOrWhiteSpace(key) ? null : key.Trim();
+    {
+        return string.IsNullOrWhiteSpace(key)
+            ? null
+            : key.Trim();
+    }
 
     private static void ValidateReservedKey(string key)
     {
         if (ReservedMetadataKeys.Keys.Contains(key))
-            throw new InvalidOperationException($"Metadata key '{key}' is reserved.");
+        {
+            throw new InvalidOperationException(
+                $"Metadata key '{key}' cannot be used because it is reserved.");
+        }
     }
 
-    private static object NormalizeValue(object value)
+    private static object? NormalizeValue(object value)
     {
         return !IsSupportedType(value)
-            ? throw new InvalidOperationException($"Metadata type '{value.GetType().Name}' is not supported.")
+            ? throw new InvalidOperationException($"Metadata type '{value.GetType().FullName}' is not supported.")
             : value switch
             {
-                string text => text.Trim(),
+                string text => string.IsNullOrWhiteSpace(text)
+                    ? null
+                    : text.Trim(),
+
                 Enum enumValue => enumValue.ToString(),
                 Guid guidValue => guidValue.ToString(),
                 _ => value
