@@ -127,7 +127,7 @@ internal static class MetadataExtensions
 
         foreach ((string key, object value) in metadata)
         {
-            string? normalizedKey = NormalizeKey(key);
+            string? normalizedKey = NormalizeString(key);
             object? normalizedValue = NormalizeValue(value);
 
             if (normalizedKey is null || normalizedValue is null)
@@ -144,11 +144,11 @@ internal static class MetadataExtensions
             : null;
     }
 
-    private static string? NormalizeKey(string key)
+    private static string? NormalizeString(string strValue)
     {
-        return string.IsNullOrWhiteSpace(key)
+        return string.IsNullOrWhiteSpace(strValue)
             ? null
-            : key.Trim();
+            : strValue.Trim();
     }
 
     private static void ValidateReservedKey(string key)
@@ -166,10 +166,7 @@ internal static class MetadataExtensions
             ? throw new InvalidOperationException($"Metadata type '{value.GetType().FullName}' is not supported.")
             : value switch
             {
-                string text => string.IsNullOrWhiteSpace(text)
-                    ? null
-                    : text.Trim(),
-
+                string text => NormalizeString(text),
                 Enum enumValue => enumValue.ToString(),
                 Guid guidValue => guidValue.ToString(),
                 _ => value
