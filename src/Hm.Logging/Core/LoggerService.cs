@@ -1,6 +1,7 @@
 ﻿using System.Collections.Immutable;
 using Hm.Logging.Abstractions;
 using Hm.Logging.Configuration;
+using Hm.Logging.Core.Scopes;
 using Hm.Logging.Extensions;
 using Hm.Logging.Models;
 using Hm.Logging.Observability;
@@ -9,7 +10,7 @@ namespace Hm.Logging.Core;
 
 /// <summary>
 /// Default implementation of <see cref="ILoggerService"/> responsible for
-/// orchestrating log validation, normalization, scope propagation,
+/// orchestrating log validation, normalization, nested scope propagation,
 /// metadata enrichment, and provider dispatch execution.
 /// </summary>
 /// <remarks>
@@ -42,17 +43,23 @@ internal sealed class LoggerService(
     private readonly LoggingOptions _options = options
         ?? throw new ArgumentNullException(nameof(options));
 
-    private readonly AsyncLocal<LogContext?> _currentContext = new();
+    private readonly AsyncLocal<ScopeNode?> _currentScope = new();
 
 
     public IDisposable BeginScope(LogContext context)
     {
         ArgumentNullException.ThrowIfNull(context);
 
-        LogContext? previousContext = _currentContext.Value;
-        _currentContext.Value = context;
+        ScopeNode? previousScope = _currentScope.Value;
 
-        return new LoggingScope(() => _currentContext.Value = previousContext);
+        _currentScope.Value = new ScopeNode(
+            context,
+            previousScope);
+
+        return new LoggingScope(() =>
+        {
+            _currentScope.Value = previousScope;
+        });
     }
 
 
@@ -69,32 +76,32 @@ internal sealed class LoggerService(
             return;
         }
 
-        LogEntry mergedEntry = MergeContext(entry, _currentContext.Value);
+        LogEntry mergedEntry = MergeContexts(entry, _currentScope.Value);
         LogEntry normalizedEntry = mergedEntry.EnsureValid(_traceContext);
 
         ValidateMessageLength(normalizedEntry.Message);
 
         foreach (ILogProvider logProvider in _logProviders)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+
             try
             {
                 await logProvider.WriteAsync(normalizedEntry, cancellationToken);
             }
             catch (Exception exception)
             {
-                if (providerFailureCallback is null)
+                if (providerFailureCallback is not null)
                 {
-                    continue;
+                    await providerFailureCallback(
+                        new ProviderFailureContext
+                        {
+                            ProviderType = logProvider.GetType(),
+                            Exception = exception,
+                            LogEntry = normalizedEntry
+                        },
+                        cancellationToken);
                 }
-
-                await providerFailureCallback(
-                    new ProviderFailureContext
-                    {
-                        ProviderType = logProvider.GetType(),
-                        Exception = exception,
-                        LogEntry = normalizedEntry
-                    },
-                    cancellationToken);
             }
         }
     }
@@ -114,15 +121,62 @@ internal sealed class LoggerService(
     }
 
 
-    private static LogEntry MergeContext(LogEntry entry, LogContext? context)
+    private static LogEntry MergeContexts(LogEntry entry, ScopeNode? currentScope)
     {
-        return context is null ? entry : (entry with
+        LogContext? mergedContext = MergeScopes(currentScope);
+        return ApplyContext(entry, mergedContext);
+    }
+
+
+    private static LogContext? MergeScopes(ScopeNode? currentScope)
+    {
+        if (currentScope is null)
         {
-            TraceId = entry.TraceId ?? context.TraceId,
-            CorrelationId = entry.CorrelationId ?? context.CorrelationId,
-            Source = entry.Source ?? context.Source,
-            Metadata = MergeMetadata(context.Metadata, entry.Metadata)
-        });
+            return null;
+        }
+
+        Stack<LogContext> contexts = new();
+
+        ScopeNode? scope = currentScope;
+
+        while (scope is not null)
+        {
+            contexts.Push(scope.Context);
+            scope = scope.Parent;
+        }
+
+        LogContext mergedContext = new();
+
+        while (contexts.Count > 0)
+        {
+            LogContext currentContext = contexts.Pop();
+
+            mergedContext = mergedContext with
+            {
+                TraceId = currentContext.TraceId ?? mergedContext.TraceId,
+                CorrelationId = currentContext.CorrelationId ?? mergedContext.CorrelationId,
+                Source = currentContext.Source ?? mergedContext.Source,
+                Metadata = MergeMetadata(
+                    mergedContext.Metadata,
+                    currentContext.Metadata)
+            };
+        }
+
+        return mergedContext;
+    }
+
+
+    private static LogEntry ApplyContext(LogEntry entry, LogContext? context)
+    {
+        return context is null
+            ? entry
+            : entry with
+            {
+                TraceId = entry.TraceId ?? context.TraceId,
+                CorrelationId = entry.CorrelationId ?? context.CorrelationId,
+                Source = entry.Source ?? context.Source,
+                Metadata = MergeMetadata(context.Metadata, entry.Metadata)
+            };
     }
 
 

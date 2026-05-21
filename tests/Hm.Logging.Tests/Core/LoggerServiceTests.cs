@@ -444,6 +444,225 @@ public sealed class LoggerServiceTests
     }
 
     [Fact]
+    public async Task LogAsync_ShouldInheritParentScopeValues_WhenChildScopeDoesNotOverride()
+    {
+        // Arrange
+        Mock<ILogProvider> providerMock = new();
+
+        LogEntry? capturedEntry = null;
+
+        providerMock.Setup(x => x.WriteAsync(
+                It.IsAny<LogEntry>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<LogEntry, CancellationToken>((entry, _) =>
+            {
+                capturedEntry = entry;
+            })
+            .Returns(Task.CompletedTask);
+
+        ILoggerService logger = CreateLoggerService(providers: providerMock.Object);
+
+        using IDisposable parentScope = logger.BeginScope(new LogContext
+        {
+            TraceId = "trace-parent",
+            CorrelationId = "correlation-parent",
+            Source = "ParentService"
+        });
+
+        using IDisposable childScope = logger.BeginScope(new LogContext());
+
+        // Act
+        await logger.LogAsync(
+            LogEntry.Info("Nested scope test"),
+            cancellationToken: CancellationToken.None);
+
+        // Assert
+        capturedEntry.Should().NotBeNull();
+
+        capturedEntry.TraceId.Should().Be("trace-parent");
+        capturedEntry.CorrelationId.Should().Be("correlation-parent");
+        capturedEntry.Source.Should().Be("ParentService");
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldAllowChildScopeToOverrideParentScopeValues()
+    {
+        // Arrange
+        Mock<ILogProvider> providerMock = new();
+
+        LogEntry? capturedEntry = null;
+
+        providerMock.Setup(x => x.WriteAsync(
+                It.IsAny<LogEntry>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<LogEntry, CancellationToken>((entry, _) =>
+            {
+                capturedEntry = entry;
+            })
+            .Returns(Task.CompletedTask);
+
+        ILoggerService logger = CreateLoggerService(providers: providerMock.Object);
+
+        using IDisposable parentScope = logger.BeginScope(new LogContext
+        {
+            TraceId = "trace-parent",
+            Source = "ParentService"
+        });
+
+        using IDisposable childScope = logger.BeginScope(new LogContext
+        {
+            Source = "ChildService"
+        });
+
+        // Act
+        await logger.LogAsync(
+            LogEntry.Info("Nested override test"),
+            cancellationToken: CancellationToken.None);
+
+        // Assert
+        capturedEntry.Should().NotBeNull();
+
+        capturedEntry.TraceId.Should().Be("trace-parent");
+        capturedEntry.Source.Should().Be("ChildService");
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldAllowLogEntryValuesToOverrideNestedScopes()
+    {
+        // Arrange
+        Mock<ILogProvider> providerMock = new();
+
+        LogEntry? capturedEntry = null;
+
+        providerMock.Setup(x => x.WriteAsync(
+                It.IsAny<LogEntry>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<LogEntry, CancellationToken>((entry, _) =>
+            {
+                capturedEntry = entry;
+            })
+            .Returns(Task.CompletedTask);
+
+        ILoggerService logger = CreateLoggerService(providers: providerMock.Object);
+
+        using IDisposable parentScope = logger.BeginScope(new LogContext
+        {
+            TraceId = "trace-parent",
+            Source = "ParentService"
+        });
+
+        using IDisposable childScope = logger.BeginScope(new LogContext
+        {
+            Source = "ChildService"
+        });
+
+        LogEntry entry = LogEntry.Info("Explicit override test") with
+        {
+            Source = "ExplicitService"
+        };
+
+        // Act
+        await logger.LogAsync(entry, cancellationToken: CancellationToken.None);
+
+        // Assert
+        capturedEntry.Should().NotBeNull();
+
+        capturedEntry.TraceId.Should().Be("trace-parent");
+        capturedEntry.Source.Should().Be("ExplicitService");
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldMergeMetadataAcrossNestedScopes()
+    {
+        // Arrange
+        Mock<ILogProvider> providerMock = new();
+
+        LogEntry? capturedEntry = null;
+
+        providerMock.Setup(x => x.WriteAsync(
+                It.IsAny<LogEntry>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<LogEntry, CancellationToken>((entry, _) =>
+            {
+                capturedEntry = entry;
+            })
+            .Returns(Task.CompletedTask);
+
+        ILoggerService logger = CreateLoggerService(providers: providerMock.Object);
+
+        using IDisposable parentScope = logger.BeginScope(new LogContext
+        {
+            Metadata = ImmutableDictionary<string, object>.Empty
+                .Add("Region", "NorthAmerica")
+        });
+
+        using IDisposable childScope = logger.BeginScope(new LogContext
+        {
+            Metadata = ImmutableDictionary<string, object>.Empty
+                .Add("PaymentProvider", "Stripe")
+        });
+
+        // Act
+        await logger.LogAsync(
+            LogEntry.Info("Metadata merge test"),
+            cancellationToken: CancellationToken.None);
+
+        // Assert
+        capturedEntry.Should().NotBeNull();
+
+        capturedEntry.Metadata.Should().NotBeNull();
+
+        capturedEntry.Metadata["Region"].Should().Be("NorthAmerica");
+        capturedEntry.Metadata["PaymentProvider"].Should().Be("Stripe");
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldRestoreParentScope_WhenChildScopeIsDisposed()
+    {
+        // Arrange
+        Mock<ILogProvider> providerMock = new();
+
+        List<LogEntry> capturedEntries = [];
+
+        providerMock.Setup(x => x.WriteAsync(
+                It.IsAny<LogEntry>(),
+                It.IsAny<CancellationToken>()))
+            .Callback<LogEntry, CancellationToken>((entry, _) =>
+            {
+                capturedEntries.Add(entry);
+            })
+            .Returns(Task.CompletedTask);
+
+        ILoggerService logger = CreateLoggerService(providers: providerMock.Object);
+
+        using IDisposable parentScope = logger.BeginScope(new LogContext
+        {
+            Source = "ParentService"
+        });
+
+        using (logger.BeginScope(new LogContext
+        {
+            Source = "ChildService"
+        }))
+        {
+            await logger.LogAsync(
+                LogEntry.Info("Child scope log"),
+                cancellationToken: CancellationToken.None);
+        }
+
+        // Act
+        await logger.LogAsync(
+            LogEntry.Info("Parent scope log"),
+            cancellationToken: CancellationToken.None);
+
+        // Assert
+        capturedEntries.Should().HaveCount(2);
+
+        capturedEntries[0].Source.Should().Be("ChildService");
+        capturedEntries[1].Source.Should().Be("ParentService");
+    }
+
+    [Fact]
     public async Task LogAsync_ShouldExecuteSuccessfully_WhenNoProvidersAreRegistered()
     {
         // Arrange

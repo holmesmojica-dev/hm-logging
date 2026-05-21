@@ -1,11 +1,16 @@
-﻿namespace Hm.Logging.Core;
+﻿namespace Hm.Logging.Core.Scopes;
 
 /// <summary>
-/// Represents a disposable logging scope.
+/// Represents an active logging scope lifetime.
 /// </summary>
 /// <remarks>
-/// Restores the previous logging context when disposed,
-/// enabling nested scope support within the logging pipeline.
+/// When disposed, restores the previous scope within the
+/// internal nested scope propagation chain.
+///
+/// <para>
+/// This enables predictable parent scope restoration
+/// across asynchronous execution flows.
+/// </para>
 /// </remarks>
 internal sealed class LoggingScope(Action onDispose) : IDisposable
 {
