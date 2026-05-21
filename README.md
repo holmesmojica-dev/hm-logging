@@ -617,20 +617,17 @@ await logger.LogAsync(
 Hm.Logging includes:
 
 - High unit test coverage
-- SonarCloud quality validation
+- SonarCloud continuous quality analysis
 - Roslyn analyzers
 - `dotnet format` integration
 - Immutable behavior validation
 - Provider isolation testing
 - Distributed tracing validation
-- Scope propagation validation
+- Nested scope propagation validation
+- Metadata normalization validation
+- CancellationToken propagation validation
 
-Current quality metrics:
-
-- ~95% test coverage
-- 0 security hotspots
-- 0 code duplications
-- Sonar Quality Gate passing
+Project quality indicators and coverage metrics are continuously validated through live SonarCloud analysis and repository badges.
 
 ---
 
