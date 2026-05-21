@@ -24,7 +24,7 @@ The library focuses on:
 - Multi-provider orchestration
 - Provider isolation
 - Metadata normalization
-- Enterprise-grade developer experience (DX)
+- Developer Experience (DX) focused
 
 Hm.Logging intentionally separates:
 - lightweight logging orchestration responsibilities
@@ -75,7 +75,7 @@ Hm.Logging avoids:
 - Provider failure diagnostics callbacks
 - CancellationToken propagation
 - Validation pipeline
-- XML documentation
+- XML documentation comments
 - Roslyn analyzer support
 - SonarCloud validated
 - High unit test coverage
@@ -92,7 +92,7 @@ dotnet add package Hm.Logging
 
 ---
 
-## Supported Platforms
+## Target Framework
 
 - .NET 10
 
@@ -609,6 +609,14 @@ await logger.LogAsync(
     LogEntry.Info("Cancellation example"),
     cancellationToken: cancellationToken);
 ```
+
+---
+
+## Versioning
+
+Hm.Logging follows Semantic Versioning (SemVer).
+
+For detailed release strategy and compatibility guidelines, see [VERSIONING.md](./VERSIONING.md).
 
 ---
 
