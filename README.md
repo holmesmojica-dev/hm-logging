@@ -1,5 +1,6 @@
 # Hm.Logging
 
+[![NuGet](https://img.shields.io/nuget/v/HDev.Hm.Logging.Core)](https://www.nuget.org/packages/HDev.Hm.Logging.Core)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=holmesmojica-dev_hm-logging&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=holmesmojica-dev_hm-logging)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=holmesmojica-dev_hm-logging&metric=coverage)](https://sonarcloud.io/summary/new_code?id=holmesmojica-dev_hm-logging)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
@@ -87,7 +88,7 @@ Hm.Logging avoids:
 ### NuGet
 
 ```bash
-dotnet add package Hm.Logging
+dotnet add package HDev.Hm.Logging.Core
 ```
 
 ---
