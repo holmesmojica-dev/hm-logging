@@ -14,7 +14,7 @@ Hm.Logging provides resilient multi-provider logging orchestration, distributed 
 
 ## Overview
 
-Hm.Logging was designed for modern microservice-based architectures where observability, traceability, resilience, and maintainability are critical.
+Hm.Logging provides structured logging capabilities for modern .NET applications, with a focus on traceability, resilience, maintainability, and developer experience.
 
 The library focuses on:
 
@@ -541,7 +541,8 @@ Metadata is automatically normalized before provider dispatch.
 Normalization includes:
 - key trimming,
 - value trimming,
-- whitespace cleanup,
+- null value removal,
+- empty and whitespace-only value removal,
 - enum string conversion,
 - Guid string conversion,
 - unsupported metadata value rejection,
@@ -582,6 +583,8 @@ The following keys are reserved by the logging pipeline:
 - Level
 - Message
 - Source
+- Exception
+- Metadata
 
 Reserved keys are protected using case-insensitive comparisons, meaning keys such as `TraceId`, `traceid`, and `TRACEID` are treated as equivalent.
 
@@ -640,60 +643,14 @@ Project quality indicators and coverage metrics are continuously validated throu
 
 ---
 
-## Architecture Overview
-
-The Hm.Logging ecosystem is designed as a layered observability platform composed of independent but complementary components.
-
-### Hm.Logging
-
-Core logging library distributed as a NuGet package.
-
-Responsibilities:
-- orchestration,
-- validation,
-- normalization,
-- tracing integration,
-- provider dispatching,
-- observability.
-
----
-
-### Hm.Logging.Contracts
-
-Future gRPC contract package.
-
-Responsibilities:
-- shared contracts,
-- DTOs,
-- protobuf definitions.
-
----
-
-### Hm.Logging.Service
-
-Future centralized logging microservice.
-
-Responsibilities:
-- persistence,
-- advanced resilience,
-- retries,
-- buffering,
-- batching,
-- provider failover,
-- centralized observability.
-
----
-
 ## Roadmap
 
 Planned future improvements include:
 
 - Additional logging providers
 - OpenTelemetry integration
-- Centralized logging service
 - Observability dashboard integrations
 - Advanced observability tooling
-- Distributed ingestion pipeline
 
 ---
 

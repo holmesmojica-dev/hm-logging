@@ -7,19 +7,19 @@
 public enum LogLevel
 {
     /// <summary>
+    /// General informational messages about application flow.
+    /// </summary>
+    Information = 0,
+
+    /// <summary>
     /// Detailed diagnostic information, typically used for debugging.
     /// </summary>
-    Trace = 0,
+    Trace = 1,
 
     /// <summary>
     /// Developer-focused diagnostic information useful during troubleshooting and debugging.
     /// </summary>
-    Debug = 1,
-
-    /// <summary>
-    /// General informational messages about application flow.
-    /// </summary>
-    Information = 2,
+    Debug = 2,
 
     /// <summary>
     /// Indicates a potential issue or unexpected situation.
