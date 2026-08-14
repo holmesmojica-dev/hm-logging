@@ -31,6 +31,8 @@ internal static class ReservedMetadataKeys
         "Timestamp",
         "Level",
         "Message",
-        "Source"
+        "Source",
+        "Exception",
+        "Metadata"
     };
 }

@@ -573,6 +573,56 @@ public sealed class LogEntryValidationExtensionsTests
     }
 
     [Fact]
+    public void EnsureValid_ShouldThrow_WhenMetadataContainsExceptionReservedKey()
+    {
+        // Arrange
+        ImmutableDictionary<string, object> metadata =
+            ImmutableDictionary<string, object>.Empty
+                .Add("Exception", "Reserved");
+
+        LogEntry logEntry = new()
+        {
+            Message = "Test message",
+            Metadata = metadata
+        };
+
+        Mock<ITraceContext> traceContextMock = new();
+
+        // Act
+        Action action = () =>
+            logEntry.EnsureValid(traceContextMock.Object);
+
+        // Assert
+        action.Should()
+            .Throw<InvalidOperationException>();
+    }
+
+    [Fact]
+    public void EnsureValid_ShouldThrow_WhenMetadataContainsMetadataReservedKey()
+    {
+        // Arrange
+        ImmutableDictionary<string, object> metadata =
+            ImmutableDictionary<string, object>.Empty
+                .Add("Metadata", "Reserved");
+
+        LogEntry logEntry = new()
+        {
+            Message = "Test message",
+            Metadata = metadata
+        };
+
+        Mock<ITraceContext> traceContextMock = new();
+
+        // Act
+        Action action = () =>
+            logEntry.EnsureValid(traceContextMock.Object);
+
+        // Assert
+        action.Should()
+            .Throw<InvalidOperationException>();
+    }
+
+    [Fact]
     public void EnsureValid_ShouldThrow_WhenMetadataContainsUnsupportedType()
     {
         // Arrange
