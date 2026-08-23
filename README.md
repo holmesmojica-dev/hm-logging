@@ -99,6 +99,20 @@ dotnet add package HDev.Hm.Logging.Core
 
 ---
 
+## Log Levels
+
+Hm.Logging defines the following log levels ordered by severity:
+
+```text
+Trace < Debug < Information < Warning < Error < Critical
+```
+
+`Information` is the default log level for new log entries and logging options.
+
+The `MinimumLevel` option controls the minimum severity that is dispatched to registered providers. Log entries with a severity below the configured minimum level are ignored.
+
+---
+
 ## Quick Start
 
 ### Dependency Injection Registration
@@ -606,7 +620,9 @@ Validation includes:
 
 ## CancellationToken Support
 
-Hm.Logging fully propagates `CancellationToken` values across the logging pipeline and provider dispatch flow.
+Hm.Logging propagates `CancellationToken` values across the logging pipeline and provider dispatch flow.
+
+Cancellation requested during provider execution is propagated to the caller and is not treated as a provider failure.
 
 ```csharp
 await logger.LogAsync(

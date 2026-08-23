@@ -89,6 +89,10 @@ internal sealed class LoggerService(
             {
                 await logProvider.WriteAsync(normalizedEntry, cancellationToken);
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw;
+            }
             catch (Exception exception)
             {
                 if (providerFailureCallback is not null)
