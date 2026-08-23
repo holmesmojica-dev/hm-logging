@@ -73,6 +73,79 @@ public sealed class LoggerServiceTests
         provider.Entries.Should().BeEmpty();
     }
 
+    [Theory]
+    [InlineData(LogLevel.Trace, LogLevel.Trace, true)]
+    [InlineData(LogLevel.Trace, LogLevel.Debug, true)]
+    [InlineData(LogLevel.Trace, LogLevel.Information, true)]
+    [InlineData(LogLevel.Trace, LogLevel.Warning, true)]
+    [InlineData(LogLevel.Trace, LogLevel.Error, true)]
+    [InlineData(LogLevel.Trace, LogLevel.Critical, true)]
+    [InlineData(LogLevel.Debug, LogLevel.Trace, false)]
+    [InlineData(LogLevel.Debug, LogLevel.Debug, true)]
+    [InlineData(LogLevel.Debug, LogLevel.Information, true)]
+    [InlineData(LogLevel.Debug, LogLevel.Warning, true)]
+    [InlineData(LogLevel.Debug, LogLevel.Error, true)]
+    [InlineData(LogLevel.Debug, LogLevel.Critical, true)]
+    [InlineData(LogLevel.Information, LogLevel.Trace, false)]
+    [InlineData(LogLevel.Information, LogLevel.Debug, false)]
+    [InlineData(LogLevel.Information, LogLevel.Information, true)]
+    [InlineData(LogLevel.Information, LogLevel.Warning, true)]
+    [InlineData(LogLevel.Information, LogLevel.Error, true)]
+    [InlineData(LogLevel.Information, LogLevel.Critical, true)]
+    [InlineData(LogLevel.Warning, LogLevel.Trace, false)]
+    [InlineData(LogLevel.Warning, LogLevel.Debug, false)]
+    [InlineData(LogLevel.Warning, LogLevel.Information, false)]
+    [InlineData(LogLevel.Warning, LogLevel.Warning, true)]
+    [InlineData(LogLevel.Warning, LogLevel.Error, true)]
+    [InlineData(LogLevel.Warning, LogLevel.Critical, true)]
+    [InlineData(LogLevel.Error, LogLevel.Trace, false)]
+    [InlineData(LogLevel.Error, LogLevel.Debug, false)]
+    [InlineData(LogLevel.Error, LogLevel.Information, false)]
+    [InlineData(LogLevel.Error, LogLevel.Warning, false)]
+    [InlineData(LogLevel.Error, LogLevel.Error, true)]
+    [InlineData(LogLevel.Error, LogLevel.Critical, true)]
+    [InlineData(LogLevel.Critical, LogLevel.Trace, false)]
+    [InlineData(LogLevel.Critical, LogLevel.Debug, false)]
+    [InlineData(LogLevel.Critical, LogLevel.Information, false)]
+    [InlineData(LogLevel.Critical, LogLevel.Warning, false)]
+    [InlineData(LogLevel.Critical, LogLevel.Error, false)]
+    [InlineData(LogLevel.Critical, LogLevel.Critical, true)]
+    public async Task LogAsync_ShouldRespectMinimumLevel(
+    LogLevel minimumLevel,
+    LogLevel entryLevel,
+    bool shouldDispatch)
+    {
+        // Arrange
+        FakeLogProvider provider = new();
+
+        ILoggerService logger = CreateLoggerService(
+            options =>
+            {
+                options.MinimumLevel = minimumLevel;
+            },
+            provider);
+
+        LogEntry entry = new()
+        {
+            Message = "Test message",
+            Level = entryLevel
+        };
+
+        // Act
+        await logger.LogAsync(entry, cancellationToken: CancellationToken.None);
+
+        // Assert
+        if (shouldDispatch)
+        {
+            provider.Entries.Should().ContainSingle();
+            provider.Entries[0].Level.Should().Be(entryLevel);
+        }
+        else
+        {
+            provider.Entries.Should().BeEmpty();
+        }
+    }
+
     [Fact]
     public async Task LogAsync_ShouldDispatchLogEntry_ToProvider()
     {
@@ -745,6 +818,30 @@ public sealed class LoggerServiceTests
         // Assert
         receivedToken.Should()
             .Be(cancellationTokenSource.Token);
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldPropagateCancellation_WhenProviderCancels()
+    {
+        // Arrange
+        using CancellationTokenSource cancellationTokenSource = new();
+
+        CancellationLogProvider provider =
+            new(cancellationTokenSource);
+
+        ILoggerService logger = CreateLoggerService(
+            options => { },
+            provider);
+
+        var entry = LogEntry.Create("Test message");
+
+        // Act
+        Func<Task> action = () => logger.LogAsync(
+            entry,
+            cancellationToken: cancellationTokenSource.Token);
+
+        // Assert
+        await action.Should().ThrowAsync<OperationCanceledException>();
     }
 
     private static ILoggerService CreateLoggerService(

@@ -85,6 +85,21 @@ public sealed class LogEntryTests
     }
 
     [Fact]
+    public void Create_ShouldPreserveExplicitTraceLevel()
+    {
+        // Arrange
+        string message = "Trace message";
+
+        // Act
+        var entry = LogEntry.Create(
+            message,
+            LogLevel.Trace);
+
+        // Assert
+        entry.Level.Should().Be(LogLevel.Trace);
+    }
+
+    [Fact]
     public void Info_ShouldAssignInformationLevel()
     {
         // Arrange
