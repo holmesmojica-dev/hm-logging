@@ -125,10 +125,15 @@ public record LogEntry
     public string? CorrelationId { get; init; }
 
     /// <summary>
-    /// Serialized exception details, if any.
-    /// It is recommended to use Exception.ToString() to include full stack trace
-    /// and inner exception information for better diagnostics.
+    /// Textual exception information associated with the log event, if any.
     /// </summary>
+    /// <remarks>
+    /// The value may contain plain text, JSON, or another textual representation
+    /// produced by the originating application or platform.
+    ///
+    /// HM Logging does not require a specific serialization format and does not
+    /// parse, deserialize, or validate the internal format of the exception information.
+    /// </remarks>
     public string? Exception { get; init; }
 
     /// <summary>
@@ -219,6 +224,41 @@ public record LogEntry
         {
             Level = LogLevel.Error,
             Exception = ex?.ToString()
+        };
+    }
+
+    /// <summary>
+    /// Creates a log entry with Error level
+    /// and the provided textual exception information.
+    /// </summary>
+    /// <param name="message">
+    /// The log message.
+    /// </param>
+    /// <param name="exception">
+    /// Textual exception information associated with the log event.
+    /// This value cannot be null, empty, or whitespace.
+    /// </param>
+    /// <returns>
+    /// A new <see cref="LogEntry"/> instance containing the provided exception information.
+    /// </returns>
+    /// <exception cref="ArgumentException">
+    /// Thrown when <paramref name="exception"/> is null, empty, or whitespace.
+    /// </exception>
+    /// <remarks>
+    /// The exception information may contain plain text, JSON, or another textual
+    /// representation produced by the originating application or platform.
+    ///
+    /// HM Logging does not require a specific serialization format and does not
+    /// parse, deserialize, or validate the internal format of the provided exception information.
+    /// </remarks>
+    public static LogEntry Error(string message, string exception)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(exception);
+
+        return Create(message) with
+        {
+            Level = LogLevel.Error,
+            Exception = exception.Trim()
         };
     }
 }

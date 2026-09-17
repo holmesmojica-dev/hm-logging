@@ -145,7 +145,7 @@ public sealed class LogEntryTests
     }
 
     [Fact]
-    public void Error_ShouldSerializeException()
+    public void Error_ShouldCaptureExceptionAsText()
     {
         // Arrange
         string message = "Error message";
@@ -193,6 +193,65 @@ public sealed class LogEntryTests
 
         // Assert
         entry.Message.Should().Be("Error message");
+    }
+
+    [Fact]
+    public void Error_ShouldAssignTextualException()
+    {
+        // Arrange
+        string message = "Error message";
+        string exception = "TimeoutError: Operation timed out";
+
+        // Act
+        var entry = LogEntry.Error(message, exception);
+
+        // Assert
+        entry.Level.Should().Be(LogLevel.Error);
+        entry.Message.Should().Be(message);
+        entry.Exception.Should().Be(exception);
+    }
+
+    [Fact]
+    public void Error_ShouldTrimTextualException()
+    {
+        // Arrange
+        string exception = "   TimeoutError: Operation timed out   ";
+
+        // Act
+        var entry = LogEntry.Error("Error message", exception);
+
+        // Assert
+        entry.Exception.Should().Be("TimeoutError: Operation timed out");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Error_ShouldThrow_WhenTextualExceptionIsEmptyOrWhitespace(
+        string exception)
+    {
+        // Act
+        Action action = () =>
+            LogEntry.Error("Error message", exception);
+
+        // Assert
+        action.Should()
+            .Throw<ArgumentException>();
+    }
+
+    [Fact]
+    public void Error_ShouldThrow_WhenTextualExceptionIsNull()
+    {
+        // Arrange
+        string? exception = null;
+
+        // Act
+        Action action = () =>
+            LogEntry.Error("Error message", exception!);
+
+        // Assert
+        action.Should()
+            .Throw<ArgumentException>();
     }
 
     [Fact]
