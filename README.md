@@ -165,6 +165,55 @@ catch (Exception ex)
 }
 ```
 
+Exception information can also be provided directly as text.
+
+Hm.Logging treats exception information as textual diagnostic content and does not
+require a specific serialization format. Applications can therefore provide the
+representation that best fits their needs.
+
+For example, a simple textual representation:
+
+```csharp
+await logger.LogAsync(
+    LogEntry.Error(
+        "Remote operation failed.",
+        "TimeoutError: The operation exceeded the configured timeout."));
+```
+
+A more detailed multi-line representation:
+
+```csharp
+await logger.LogAsync(
+    LogEntry.Error(
+        "Remote operation failed.",
+        """
+        TimeoutError: The operation exceeded the configured timeout.
+        Service: PaymentService
+        Operation: ProcessPayment
+        Timeout: 30s
+        """));
+```
+
+Or structured information such as JSON:
+
+```csharp
+await logger.LogAsync(
+    LogEntry.Error(
+        "Remote operation failed.",
+        """
+        {
+          "type": "TimeoutError",
+          "message": "The operation exceeded the configured timeout.",
+          "service": "PaymentService",
+          "operation": "ProcessPayment",
+          "timeoutSeconds": 30
+        }
+        """));
+```
+
+Hm.Logging stores this information as text and does not parse, deserialize,
+or require a particular internal format.
+
 ---
 
 ## Structured Metadata
