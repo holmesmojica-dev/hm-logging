@@ -235,15 +235,12 @@ public record LogEntry
     /// The log message.
     /// </param>
     /// <param name="exception">
-    /// Textual exception information associated with the log event.
-    /// This value cannot be null, empty, or whitespace.
+    /// Optional textual exception information associated with the log event.
+    /// Null, empty, or whitespace values are treated as absence of exception information.
     /// </param>
     /// <returns>
-    /// A new <see cref="LogEntry"/> instance containing the provided exception information.
+    /// A new <see cref="LogEntry"/> instance.
     /// </returns>
-    /// <exception cref="ArgumentException">
-    /// Thrown when <paramref name="exception"/> is null, empty, or whitespace.
-    /// </exception>
     /// <remarks>
     /// The exception information may contain plain text, JSON, or another textual
     /// representation produced by the originating application or platform.
@@ -253,12 +250,12 @@ public record LogEntry
     /// </remarks>
     public static LogEntry Error(string message, string exception)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(exception);
-
         return Create(message) with
         {
             Level = LogLevel.Error,
-            Exception = exception.Trim()
+            Exception = string.IsNullOrWhiteSpace(exception)
+            ? null
+            : exception.Trim()
         };
     }
 }

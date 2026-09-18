@@ -227,31 +227,35 @@ public sealed class LogEntryTests
     [Theory]
     [InlineData("")]
     [InlineData("   ")]
-    public void Error_ShouldThrow_WhenTextualExceptionIsEmptyOrWhitespace(
+    public void Error_ShouldTreatEmptyOrWhitespaceTextualExceptionAsAbsent(
         string exception)
     {
+        // Arrange
+        string message = "Error message";
+
         // Act
-        Action action = () =>
-            LogEntry.Error("Error message", exception);
+        var entry = LogEntry.Error(message, exception);
 
         // Assert
-        action.Should()
-            .Throw<ArgumentException>();
+        entry.Level.Should().Be(LogLevel.Error);
+        entry.Message.Should().Be(message);
+        entry.Exception.Should().BeNull();
     }
 
     [Fact]
-    public void Error_ShouldThrow_WhenTextualExceptionIsNull()
+    public void Error_ShouldTreatNullTextualExceptionAsAbsent()
     {
         // Arrange
+        string message = "Error message";
         string? exception = null;
 
         // Act
-        Action action = () =>
-            LogEntry.Error("Error message", exception!);
+        var entry = LogEntry.Error(message, exception!);
 
         // Assert
-        action.Should()
-            .Throw<ArgumentException>();
+        entry.Level.Should().Be(LogLevel.Error);
+        entry.Message.Should().Be(message);
+        entry.Exception.Should().BeNull();
     }
 
     [Fact]

@@ -214,6 +214,11 @@ await logger.LogAsync(
 Hm.Logging stores this information as text and does not parse, deserialize,
 or require a particular internal format.
 
+Exception information is optional. When textual exception information is provided,
+leading and trailing whitespace is removed. Null, empty, or whitespace-only values
+are treated as absence of exception information and do not prevent the log entry
+from being created.
+
 ---
 
 ## Structured Metadata
