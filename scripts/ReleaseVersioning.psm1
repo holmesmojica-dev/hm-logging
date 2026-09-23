@@ -1,5 +1,20 @@
 Set-StrictMode -Version Latest
 
+function Resolve-HmLoggingReleaseTag {
+    param([Parameter(Mandatory)][string]$Tag)
+
+    if ($Tag -notmatch '^v([0-9]+\.[0-9]+\.[0-9]+(?:-preview\.[0-9]+)?)$') {
+        throw "Release tag '$Tag' must use the supported v<major.minor.patch[-preview.number]> form."
+    }
+
+    $releaseVersion = $Matches[1]
+
+    return [pscustomobject]@{
+        Tag = $Tag
+        ReleaseVersion = $releaseVersion
+    }
+}
+
 function Resolve-HmLoggingReleaseContext {
     param(
         [Parameter(Mandatory)][string]$RepositoryPath,
@@ -7,11 +22,7 @@ function Resolve-HmLoggingReleaseContext {
         [Parameter(Mandatory)][string]$MainBranch
     )
 
-    if ($Tag -notmatch '^v([0-9]+\.[0-9]+\.[0-9]+(?:-preview\.[0-9]+)?)$') {
-        throw "Release tag '$Tag' must use the supported v<major.minor.patch[-preview.number]> form."
-    }
-
-    $releaseVersion = $Matches[1]
+    $release = Resolve-HmLoggingReleaseTag -Tag $Tag
 
     $commit = (& git -C $RepositoryPath rev-parse --verify "$Tag^{commit}").Trim()
     if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($commit)) {
@@ -30,7 +41,7 @@ function Resolve-HmLoggingReleaseContext {
 
     [pscustomobject]@{
         Tag = $Tag
-        ReleaseVersion = $releaseVersion
+        ReleaseVersion = $release.ReleaseVersion
         SourceCommit = $commit
     }
 }
@@ -47,4 +58,4 @@ function Assert-HmLoggingCheckedOutCommit {
     }
 }
 
-Export-ModuleMember -Function Resolve-HmLoggingReleaseContext, Assert-HmLoggingCheckedOutCommit
+Export-ModuleMember -Function Resolve-HmLoggingReleaseTag, Resolve-HmLoggingReleaseContext, Assert-HmLoggingCheckedOutCommit

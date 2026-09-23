@@ -690,7 +690,14 @@ await logger.LogAsync(
 
 Hm.Logging follows Semantic Versioning (SemVer).
 
-For detailed release strategy and compatibility guidelines, see [VERSIONING.md](./VERSIONING.md).
+Release versions are derived from the release tag and use `vMAJOR.MINOR.PATCH`
+or `vMAJOR.MINOR.PATCH-preview.NUMBER`. The NuGet package version matches the
+release version without the `v` prefix.
+
+Major releases introduce public API breaking changes. Minor releases introduce
+backward-compatible functionality, and patch releases provide
+backward-compatible fixes and internal improvements. Preview releases support
+early feedback before stable distribution.
 
 ---
 
