@@ -2,4 +2,5 @@
 .gitattributes text eol=lf
 hooks/pre-commit text eol=lf
 scripts/*.ps1 text eol=lf
+scripts/*.psm1 text eol=lf
 *.yml text eol=lf
