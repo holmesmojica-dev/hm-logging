@@ -17,15 +17,18 @@ if ($release.ReleaseVersion -cne $ReleaseVersion) { throw "Release tag '$Tag' do
 $isPrerelease = $release.ReleaseVersion.Contains('-', [System.StringComparison]::Ordinal)
 
 $repositoryLookupOutput = @(& gh api --include --silent --method GET "repos/$Repository" 2>&1 | ForEach-Object { $_.ToString() })
-Assert-HmLoggingGitHubRepositoryAccess -Repository $Repository -ExitCode $LASTEXITCODE -Output $repositoryLookupOutput
+$repositoryLookupExitCode = $LASTEXITCODE
+Assert-HmLoggingGitHubRepositoryAccess -Repository $Repository -ExitCode $repositoryLookupExitCode -Output $repositoryLookupOutput
 
 $lookupOutput = @(& gh api --include --method GET "repos/$Repository/releases/tags/$Tag" 2>&1 | ForEach-Object { $_.ToString() })
-$lookup = Resolve-HmLoggingGitHubReleaseLookup -Tag $Tag -ExpectedPrerelease $isPrerelease -ExitCode $LASTEXITCODE -Output $lookupOutput
+$lookupExitCode = $LASTEXITCODE
+$lookup = Resolve-HmLoggingGitHubReleaseLookup -Tag $Tag -ExpectedPrerelease $isPrerelease -ExitCode $lookupExitCode -Output $lookupOutput
 if ($lookup.State -eq 'existing') {
     Write-Output "GitHub Release '$Tag' is already verified."
     return
 }
 
 & gh @(Get-HmLoggingGitHubReleaseCreateArguments -Tag $Tag -Repository $Repository -Prerelease $isPrerelease)
-if ($LASTEXITCODE -ne 0) { throw "GitHub Release creation failed for '$Tag'." }
+$createExitCode = $LASTEXITCODE
+if ($createExitCode -ne 0) { throw "GitHub Release creation failed for '$Tag' with exit code $createExitCode." }
 Write-Output "GitHub Release '$Tag' was created."

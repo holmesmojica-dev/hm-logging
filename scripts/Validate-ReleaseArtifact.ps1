@@ -31,6 +31,21 @@ try {
     if (@($nuspec).Count -ne 1) { throw 'Release package has an unexpected nuspec.' }
     $reader = [System.IO.StreamReader]::new($nuspec.Open())
     try { [xml]$metadata = $reader.ReadToEnd() } finally { $reader.Dispose() }
+    $iconNode = $metadata.SelectSingleNode('/*[local-name()="package"]/*[local-name()="metadata"]/*[local-name()="icon"]')
+    if ($null -eq $iconNode -or $iconNode.InnerText -cne 'icon.png') {
+        throw "Release package must declare 'icon.png' as its nuspec icon."
+    }
+    $iconEntries = @($package.Entries | Where-Object { $_.FullName -ceq $iconNode.InnerText })
+    if ($iconEntries.Count -ne 1) { throw 'The declared package icon must resolve to exactly one package entry.' }
+    $iconStream = $iconEntries[0].Open()
+    try {
+        $signature = [byte[]]::new(8)
+        $iconStream.ReadExactly($signature, 0, $signature.Length)
+        if ([Convert]::ToHexString($signature) -cne '89504E470D0A1A0A') {
+            throw 'The declared package icon does not have a PNG signature.'
+        }
+    }
+    finally { $iconStream.Dispose() }
     if ($metadata.package.metadata.id -ne 'HDev.Hm.Logging.Core' -or $metadata.package.metadata.version -ne $ReleaseVersion -or $metadata.package.metadata.repository.commit -ne $SourceCommit) {
         throw 'Release package metadata does not match the expected package and source identity.'
     }
