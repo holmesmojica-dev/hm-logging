@@ -1,0 +1,4 @@
+# Automation scripts execute across platforms and must retain LF regardless of core.autocrlf.
+.gitattributes text eol=lf
+hooks/pre-commit text eol=lf
+scripts/*.ps1 text eol=lf
