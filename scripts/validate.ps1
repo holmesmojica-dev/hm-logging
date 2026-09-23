@@ -1,7 +1,13 @@
 [CmdletBinding()]
 param(
     [Parameter()]
-    [switch]$CollectCoverage
+    [switch]$CollectCoverage,
+
+    [Parameter()]
+    [string]$ReleaseVersion,
+
+    [Parameter()]
+    [string]$SourceCommit
 )
 
 Set-StrictMode -Version Latest
@@ -35,6 +41,21 @@ if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($repositoryRoot)) {
 
 Push-Location $repositoryRoot
 try {
+    if ([string]::IsNullOrWhiteSpace($ReleaseVersion) -xor [string]::IsNullOrWhiteSpace($SourceCommit)) {
+        throw 'ReleaseVersion and SourceCommit must be supplied together for release validation.'
+    }
+
+    $buildArguments = @('build', 'Hm.Logging.sln', '--configuration', 'Release', '--no-restore')
+    if (-not [string]::IsNullOrWhiteSpace($ReleaseVersion)) {
+        $buildArguments += @(
+            "-p:ReleaseVersion=$ReleaseVersion",
+            "-p:PackageVersion=$ReleaseVersion",
+            "-p:RepositoryCommit=$SourceCommit",
+            "-p:SourceRevisionId=$SourceCommit",
+            '-p:ContinuousIntegrationBuild=true'
+        )
+    }
+
     $testArguments = @('test', 'Hm.Logging.sln', '--configuration', 'Release', '--no-build', '--no-restore')
     if ($CollectCoverage) {
         $testArguments += @(
@@ -46,7 +67,7 @@ try {
 
     Invoke-ValidationCommand -Command dotnet -Arguments @('restore', 'Hm.Logging.sln')
     Invoke-ValidationCommand -Command dotnet -Arguments @('format', 'Hm.Logging.sln', '--no-restore', '--verify-no-changes')
-    Invoke-ValidationCommand -Command dotnet -Arguments @('build', 'Hm.Logging.sln', '--configuration', 'Release', '--no-restore')
+    Invoke-ValidationCommand -Command dotnet -Arguments $buildArguments
     Invoke-ValidationCommand -Command dotnet -Arguments $testArguments
 }
 finally {
