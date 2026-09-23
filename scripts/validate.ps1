@@ -70,6 +70,7 @@ try {
     Invoke-ValidationCommand -Command dotnet -Arguments $buildArguments
     Invoke-ValidationCommand -Command dotnet -Arguments $testArguments
     Invoke-ValidationCommand -Command pwsh -Arguments @('-NoProfile', '-File', 'tests/GitHubRelease.Tests.ps1')
+    Invoke-ValidationCommand -Command pwsh -Arguments @('-NoProfile', '-File', 'tests/ReleaseArtifact.Tests.ps1')
     Invoke-ValidationCommand -Command pwsh -Arguments @('-NoProfile', '-File', 'tests/ReleaseWorkflow.Tests.ps1')
 }
 finally {

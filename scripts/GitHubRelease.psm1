@@ -1,7 +1,7 @@
 Set-StrictMode -Version Latest
 
 function Get-HmLoggingGitHubHttpStatus {
-    param([Parameter(Mandatory)][string[]]$Output)
+    param([Parameter(Mandatory)][AllowEmptyString()][AllowEmptyCollection()][string[]]$Output)
 
     $text = $Output -join [Environment]::NewLine
     $statusMatches = [regex]::Matches($text, '(?m)^HTTP/\S+\s+(\d{3})(?:\s|$)')
@@ -14,7 +14,7 @@ function Assert-HmLoggingGitHubRepositoryAccess {
     param(
         [Parameter(Mandatory)][string]$Repository,
         [Parameter(Mandatory)][int]$ExitCode,
-        [Parameter(Mandatory)][string[]]$Output
+        [Parameter(Mandatory)][AllowEmptyString()][AllowEmptyCollection()][string[]]$Output
     )
 
     $status = Get-HmLoggingGitHubHttpStatus -Output $Output
@@ -28,13 +28,13 @@ function Resolve-HmLoggingGitHubReleaseLookup {
         [Parameter(Mandatory)][string]$Tag,
         [Parameter(Mandatory)][bool]$ExpectedPrerelease,
         [Parameter(Mandatory)][int]$ExitCode,
-        [Parameter(Mandatory)][string[]]$Output
+        [Parameter(Mandatory)][AllowEmptyString()][AllowEmptyCollection()][string[]]$Output
     )
 
     $text = ($Output -join [Environment]::NewLine).Trim()
     $status = Get-HmLoggingGitHubHttpStatus -Output $Output
     if ($status -eq 404) {
-        if ($ExitCode -eq 0) { throw "GitHub Release lookup for '$Tag' returned HTTP 404 with a successful exit code." }
+        if ($ExitCode -ne 1) { throw "GitHub Release lookup for '$Tag' returned HTTP 404 with unexpected exit code $ExitCode." }
         return [pscustomobject]@{ State = 'absent' }
     }
 
