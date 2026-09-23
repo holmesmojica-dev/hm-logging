@@ -753,6 +753,14 @@ Before contributing:
 - maintain architectural consistency,
 - and preserve DX quality standards.
 
+After cloning, enable the repository-managed pre-commit hook:
+
+```powershell
+pwsh -File scripts/install-hooks.ps1
+```
+
+This configures `core.hooksPath=hooks` for the current repository only.
+
 ---
 
 ## License
