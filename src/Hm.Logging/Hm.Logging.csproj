@@ -32,9 +32,6 @@
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
-		<PackageReleaseNotes>
-			Align LogLevel severity ordering with the logging domain and improve cancellation handling during provider execution.
-		</PackageReleaseNotes>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 		<PackageIcon>icon.png</PackageIcon>
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
@@ -44,7 +41,9 @@
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(ReleaseVersion)' != ''">
+		<Version>$(ReleaseVersion)</Version>
 		<PackageVersion>$(ReleaseVersion)</PackageVersion>
+		<FileVersion>$([System.Text.RegularExpressions.Regex]::Match('$(ReleaseVersion)', '^\d+\.\d+\.\d+').Value).0</FileVersion>
 	</PropertyGroup>
 	
 	<ItemGroup>
