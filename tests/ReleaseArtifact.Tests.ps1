@@ -55,6 +55,8 @@ try {
         catch { $failure = $_.Exception.Message }
         if ($null -eq $case.Error) {
             if ($null -ne $failure) { throw "Valid package rejected: $failure" }
+            Remove-Item -LiteralPath (Join-Path $directory "HDev.Hm.Logging.Core.$version.snupkg")
+            & (Join-Path $repositoryRoot 'scripts/Validate-ReleaseArtifact.ps1') -PackageDirectory $directory -ReleaseVersion $version -SourceCommit $commit -SkipSymbolPackage
         }
         elseif ($null -eq $failure -or $failure -notlike "*$($case.Error)*") {
             throw "Case '$($case.Name)' expected '$($case.Error)', received '$failure'."
@@ -62,4 +64,4 @@ try {
     }
 }
 finally { Remove-Item -LiteralPath $testDirectory -Recurse -Force }
-Write-Output 'Release artifact tests passed (6 icon scenarios, including portable PDB/Source Link validation).'
+Write-Output 'Release artifact tests passed (6 icon scenarios, including portable PDB/Source Link and remote package validation).'

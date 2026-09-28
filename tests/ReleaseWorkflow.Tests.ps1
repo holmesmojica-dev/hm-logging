@@ -13,6 +13,8 @@ $repositoryRoot = (& git rev-parse --show-toplevel).Trim()
 $workflow = Get-Content -LiteralPath (Join-Path $repositoryRoot '.github/workflows/publish-nuget.yml') -Raw
 $releaseScript = Get-Content -LiteralPath (Join-Path $repositoryRoot 'scripts/Publish-GitHubRelease.ps1') -Raw
 $releaseModule = Get-Content -LiteralPath (Join-Path $repositoryRoot 'scripts/GitHubRelease.psm1') -Raw
+$publishScript = Get-Content -LiteralPath (Join-Path $repositoryRoot 'scripts/Publish-NuGetRelease.ps1') -Raw
+Import-Module (Join-Path $repositoryRoot 'scripts/NuGetPublication.psm1') -Force
 
 Assert-True ($workflow -match '(?ms)^permissions:\s+contents: read') 'The release workflow must remain read-only by default.'
 Assert-True ($workflow -match '(?ms)^  post-publication:.*?needs: \[preflight, build-artifact, attest-artifacts, publish-nuget\].*?permissions:\s+contents: write') 'GitHub Release creation must follow successful NuGet publication with contents-write scoped to its job.'
@@ -26,5 +28,10 @@ Assert-True ($releaseModule -match '--generate-notes') 'GitHub Release creation 
 Assert-True ($releaseModule -match '--verify-tag') 'GitHub Release creation must not create or move a release tag.'
 Assert-True ($releaseModule -match '\$status -eq 404') 'Only an HTTP 404 from the release-by-tag endpoint may represent an absent release.'
 Assert-True ($releaseModule -notmatch '\.nupkg|\.snupkg') 'GitHub Release creation must not attach package artifacts.'
+Assert-True ($publishScript -match '(?s)dotnet nuget push.*?Invoke-WebRequest.*?Validate-ReleaseArtifact\.ps1.*?-SkipSymbolPackage.*?Assert-HmLoggingNuGetContentIdentity.*?return') 'Fresh publication must download, validate, and confirm remote content identity before completing.'
+Assert-True ($publishScript -notmatch 'already_verified|Resolve-Hm.*NuGet.*Decision') 'Core publication must not introduce a recovery or already-verified model.'
+Assert-True ((Get-HmLoggingNuGetPackageUri -ReleaseVersion '1.2.3-PREVIEW.4') -ceq 'https://api.nuget.org/v3-flatcontainer/hdev.hm.logging.core/1.2.3-preview.4/hdev.hm.logging.core.1.2.3-preview.4.nupkg') 'Remote verification must resolve the exact NuGet flat-container package.'
+Assert-True (Test-HmLoggingNuGetNotFoundStatusCode -StatusCode 404) 'Only NuGet not-found responses may be retried while publication becomes available.'
+Assert-True (-not (Test-HmLoggingNuGetNotFoundStatusCode -StatusCode 401)) 'Authorization and other remote failures must fail closed.'
 
 Write-Output 'Release workflow tests passed.'

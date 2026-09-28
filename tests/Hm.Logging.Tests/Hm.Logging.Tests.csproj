@@ -17,6 +17,7 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.8" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <PackageReference Include="Moq" Version="4.20.72" />
+    <PackageReference Include="NuGet.Packaging" Version="7.9.0" PrivateAssets="all" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -26,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Hm.Logging\Hm.Logging.csproj" />
+    <ProjectReference Include="..\..\tools\Hm.Logging.ReleaseTools\Hm.Logging.ReleaseTools.csproj" />
   </ItemGroup>
 
 </Project>

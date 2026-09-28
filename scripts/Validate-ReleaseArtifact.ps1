@@ -2,7 +2,8 @@
 param(
     [Parameter(Mandatory)][string]$PackageDirectory,
     [Parameter(Mandatory)][string]$ReleaseVersion,
-    [Parameter(Mandatory)][string]$SourceCommit
+    [Parameter(Mandatory)][string]$SourceCommit,
+    [switch]$SkipSymbolPackage
 )
 
 Set-StrictMode -Version Latest
@@ -16,7 +17,8 @@ $packagePath = Join-Path $directory $packageName
 $symbolPath = Join-Path $directory $symbolName
 $packageCandidates = @(Get-ChildItem -LiteralPath $directory -Filter 'HDev.Hm.Logging.Core.*.nupkg')
 $symbolCandidates = @(Get-ChildItem -LiteralPath $directory -Filter 'HDev.Hm.Logging.Core.*.snupkg')
-if ($packageCandidates.Count -ne 1 -or $packageCandidates[0].Name -cne $packageName -or $symbolCandidates.Count -ne 1 -or $symbolCandidates[0].Name -cne $symbolName) {
+if ($packageCandidates.Count -ne 1 -or $packageCandidates[0].Name -cne $packageName -or
+    (-not $SkipSymbolPackage -and ($symbolCandidates.Count -ne 1 -or $symbolCandidates[0].Name -cne $symbolName))) {
     throw 'Exactly the expected .nupkg and .snupkg release artifacts must be present.'
 }
 
@@ -52,27 +54,30 @@ try {
 }
 finally { $package.Dispose() }
 
-$symbols = [System.IO.Compression.ZipFile]::OpenRead($symbolPath)
-try {
-    $pdbEntries = @($symbols.Entries | Where-Object FullName -eq 'lib/net10.0/Hm.Logging.pdb')
-    if ($pdbEntries.Count -ne 1) { throw 'Symbol package does not contain the expected portable PDB.' }
-    $stream = $pdbEntries[0].Open()
+$symbols = $null
+if (-not $SkipSymbolPackage) {
+    $symbols = [System.IO.Compression.ZipFile]::OpenRead($symbolPath)
     try {
-        $pdbStream = [System.IO.MemoryStream]::new()
+        $pdbEntries = @($symbols.Entries | Where-Object FullName -eq 'lib/net10.0/Hm.Logging.pdb')
+        if ($pdbEntries.Count -ne 1) { throw 'Symbol package does not contain the expected portable PDB.' }
+        $stream = $pdbEntries[0].Open()
         try {
-            $stream.CopyTo($pdbStream)
-            $pdbStream.Position = 0
-            $provider = [System.Reflection.Metadata.MetadataReaderProvider]::FromPortablePdbStream($pdbStream)
+            $pdbStream = [System.IO.MemoryStream]::new()
             try {
-                $reader = $provider.GetMetadataReader()
-                $sourceLinkGuid = [Guid]'CC110556-A091-4D38-9FEC-25AB9A351A6A'
-                $sourceLink = @($reader.CustomDebugInformation | Where-Object { $reader.GetGuid($reader.GetCustomDebugInformation($_).Kind) -eq $sourceLinkGuid })
-                if ($sourceLink.Count -ne 1) { throw 'Portable PDB does not contain Source Link metadata.' }
+                $stream.CopyTo($pdbStream)
+                $pdbStream.Position = 0
+                $provider = [System.Reflection.Metadata.MetadataReaderProvider]::FromPortablePdbStream($pdbStream)
+                try {
+                    $reader = $provider.GetMetadataReader()
+                    $sourceLinkGuid = [Guid]'CC110556-A091-4D38-9FEC-25AB9A351A6A'
+                    $sourceLink = @($reader.CustomDebugInformation | Where-Object { $reader.GetGuid($reader.GetCustomDebugInformation($_).Kind) -eq $sourceLinkGuid })
+                    if ($sourceLink.Count -ne 1) { throw 'Portable PDB does not contain Source Link metadata.' }
+                }
+                finally { $provider.Dispose() }
             }
-            finally { $provider.Dispose() }
+            finally { $pdbStream.Dispose() }
         }
-        finally { $pdbStream.Dispose() }
+        finally { $stream.Dispose() }
     }
-    finally { $stream.Dispose() }
+    finally { $symbols.Dispose() }
 }
-finally { $symbols.Dispose() }

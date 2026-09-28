@@ -7,9 +7,13 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hm.Logging", "src\Hm.Loggin
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hm.Logging.Tests", "tests\Hm.Logging.Tests\Hm.Logging.Tests.csproj", "{C2F9AB64-0BB4-457B-822E-E38A40B404AF}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hm.Logging.ReleaseTools", "tools\Hm.Logging.ReleaseTools\Hm.Logging.ReleaseTools.csproj", "{663352EA-7D97-4702-9CE1-58386ED7927D}"
+EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{82681B27-E484-4E1B-A238-8ADC07F60602}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{9538172B-5549-4F3F-B09C-428AD6A10390}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{7AF667BE-7CB0-4A12-9963-26F8028DCD19}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,6 +29,10 @@ Global
 		{C2F9AB64-0BB4-457B-822E-E38A40B404AF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2F9AB64-0BB4-457B-822E-E38A40B404AF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2F9AB64-0BB4-457B-822E-E38A40B404AF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{663352EA-7D97-4702-9CE1-58386ED7927D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{663352EA-7D97-4702-9CE1-58386ED7927D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{663352EA-7D97-4702-9CE1-58386ED7927D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{663352EA-7D97-4702-9CE1-58386ED7927D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,6 +40,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3CC0661F-A836-E019-EF1C-FEBA9F7E3AB9} = {82681B27-E484-4E1B-A238-8ADC07F60602}
 		{C2F9AB64-0BB4-457B-822E-E38A40B404AF} = {9538172B-5549-4F3F-B09C-428AD6A10390}
+		{663352EA-7D97-4702-9CE1-58386ED7927D} = {7AF667BE-7CB0-4A12-9963-26F8028DCD19}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D2E8C582-9AEE-491C-80C8-7CB8ACBC4805}
