@@ -40,7 +40,7 @@ jobs:
           /d:sonar.qualitygate.wait=true
           /d:sonar.cs.opencover.reportsPaths="**/TestResults/coverage.opencover.xml"
           /d:sonar.exclusions=**/obj/**,**/bin/**
-          /d:sonar.coverage.exclusions=**/obj/**,**/bin/**
+          /d:sonar.coverage.exclusions=**/obj/**,**/bin/**,**/*.ps1,**/*.psm1
 
       - name: Validate with coverage
         shell: pwsh
