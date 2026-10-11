@@ -1,4 +1,5 @@
-﻿using Hm.Logging.Models;
+﻿using System.Runtime.CompilerServices;
+using Hm.Logging.Models;
 using Hm.Logging.Observability;
 
 namespace Hm.Logging.Abstractions;
@@ -142,8 +143,48 @@ public interface ILoggerService
     /// by the logging pipeline and propagate to the caller.
     /// </para>
     /// </remarks>
+    [OverloadResolutionPriority(1)]
     Task LogAsync(
         LogEntry entry,
+        ProviderFailureCallback? providerFailureCallback = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Logs an entry asynchronously through selected registered provider instances.
+    /// </summary>
+    /// <param name="entry">Log entry to validate, normalize, enrich, and dispatch.</param>
+    /// <param name="targetProviders">
+    /// Provider instance identifiers to target. A null or empty collection dispatches to all registered providers.
+    /// Duplicate identifiers are treated as one destination.
+    /// </param>
+    /// <param name="providerFailureCallback">
+    /// Optional callback invoked individually when a selected provider fails during execution.
+    /// </param>
+    /// <param name="cancellationToken">Token used to propagate cancellation notifications.</param>
+    /// <returns>A task representing the asynchronous logging operation.</returns>
+    /// <remarks>
+    /// Core validates the complete destination selection before invoking any provider. Unknown or empty identifiers
+    /// are selection errors and are not reported through <paramref name="providerFailureCallback"/>. Selected
+    /// providers otherwise use the same filtering, scope merging, normalization, failure isolation, and cancellation
+    /// behavior as default all-provider dispatch.
+    /// <para>
+    /// Example:
+    /// </para>
+    /// <code>
+    /// await logger.LogAsync(
+    ///     LogEntry.Info("Order accepted"),
+    ///     targetProviders: [auditProviderId, operationsProviderId],
+    ///     cancellationToken: cancellationToken);
+    /// </code>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="entry"/> is null.</exception>
+    /// <exception cref="ArgumentException">
+    /// Thrown when the selection contains <see cref="Guid.Empty"/> or an identifier that is not registered.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">Thrown when cancellation is requested.</exception>
+    Task LogAsync(
+        LogEntry entry,
+        IEnumerable<Guid>? targetProviders,
         ProviderFailureCallback? providerFailureCallback = null,
         CancellationToken cancellationToken = default);
 }

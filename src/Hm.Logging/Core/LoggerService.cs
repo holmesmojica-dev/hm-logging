@@ -20,7 +20,8 @@ namespace Hm.Logging.Core;
 ///
 /// <para>
 /// Optional provider failure diagnostics can be observed through
-/// the provider failure callback available in <see cref="LogAsync"/>.
+/// the provider failure callback available in
+/// <see cref="ILoggerService.LogAsync(LogEntry, ProviderFailureCallback, CancellationToken)"/>.
 /// </para>
 ///
 /// <para>
@@ -29,22 +30,24 @@ namespace Hm.Logging.Core;
 /// even when individual providers fail.
 /// </para>
 /// </remarks>
-internal sealed class LoggerService(
-    IEnumerable<ILogProvider> logProviders,
-    ITraceContext traceContext,
-    LoggingOptions options) : ILoggerService
+internal sealed class LoggerService : ILoggerService
 {
-    private readonly IReadOnlyCollection<ILogProvider> _logProviders = logProviders?.ToArray()
-        ?? throw new ArgumentNullException(nameof(logProviders));
-
-    private readonly ITraceContext _traceContext = traceContext
-        ?? throw new ArgumentNullException(nameof(traceContext));
-
-    private readonly LoggingOptions _options = options
-        ?? throw new ArgumentNullException(nameof(options));
-
+    private readonly IReadOnlyList<ILogProvider> _logProviders;
+    private readonly HashSet<Guid> _providerIds;
+    private readonly ITraceContext _traceContext;
+    private readonly LoggingOptions _options;
     private readonly AsyncLocal<ScopeNode?> _currentScope = new();
 
+    public LoggerService(
+        IEnumerable<ILogProvider> logProviders,
+        ITraceContext traceContext,
+        LoggingOptions options)
+    {
+        _logProviders = ValidateProviders(logProviders);
+        _providerIds = [.. _logProviders.Select(provider => provider.ProviderId)];
+        _traceContext = traceContext ?? throw new ArgumentNullException(nameof(traceContext));
+        _options = options ?? throw new ArgumentNullException(nameof(options));
+    }
 
     public IDisposable BeginScope(LogContext context)
     {
@@ -63,13 +66,30 @@ internal sealed class LoggerService(
     }
 
 
-    public async Task LogAsync(
+    public Task LogAsync(
         LogEntry entry,
         ProviderFailureCallback? providerFailureCallback = null,
         CancellationToken cancellationToken = default)
+        => LogCoreAsync(entry, targetProviders: null, providerFailureCallback, cancellationToken);
+
+
+    public Task LogAsync(
+        LogEntry entry,
+        IEnumerable<Guid>? targetProviders,
+        ProviderFailureCallback? providerFailureCallback = null,
+        CancellationToken cancellationToken = default)
+        => LogCoreAsync(entry, targetProviders, providerFailureCallback, cancellationToken);
+
+
+    private async Task LogCoreAsync(
+        LogEntry entry,
+        IEnumerable<Guid>? targetProviders,
+        ProviderFailureCallback? providerFailureCallback,
+        CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(entry);
         cancellationToken.ThrowIfCancellationRequested();
+        IReadOnlyList<ILogProvider> selectedProviders = ResolveProviders(targetProviders);
 
         if (entry.Level < _options.MinimumLevel)
         {
@@ -81,7 +101,7 @@ internal sealed class LoggerService(
 
         ValidateMessageLength(normalizedEntry.Message);
 
-        foreach (ILogProvider logProvider in _logProviders)
+        foreach (ILogProvider logProvider in selectedProviders)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -100,7 +120,7 @@ internal sealed class LoggerService(
                     await providerFailureCallback(
                         new ProviderFailureContext
                         {
-                            ProviderType = logProvider.GetType(),
+                            ProviderId = logProvider.ProviderId,
                             Exception = exception,
                             LogEntry = normalizedEntry
                         },
@@ -108,6 +128,63 @@ internal sealed class LoggerService(
                 }
             }
         }
+    }
+
+
+    private IReadOnlyList<ILogProvider> ResolveProviders(IEnumerable<Guid>? targetProviders)
+    {
+        if (targetProviders is null)
+        {
+            return _logProviders;
+        }
+
+        HashSet<Guid> requestedProviderIds = [];
+        foreach (Guid providerId in targetProviders)
+        {
+            if (providerId == Guid.Empty)
+            {
+                throw new ArgumentException(
+                    "A target provider identifier cannot be empty.",
+                    nameof(targetProviders));
+            }
+
+            _ = requestedProviderIds.Add(providerId);
+        }
+
+        if (requestedProviderIds.Count == 0)
+        {
+            return _logProviders;
+        }
+
+        Guid[] unknownProviderIds = [.. requestedProviderIds.Where(providerId => !_providerIds.Contains(providerId))];
+        return unknownProviderIds.Length == 0
+            ? [.. _logProviders.Where(provider => requestedProviderIds.Contains(provider.ProviderId))]
+            : throw new ArgumentException(
+                $"The following target provider identifiers are not registered: {string.Join(", ", unknownProviderIds)}.",
+                nameof(targetProviders));
+    }
+
+
+    private static ILogProvider[] ValidateProviders(IEnumerable<ILogProvider> logProviders)
+    {
+        ArgumentNullException.ThrowIfNull(logProviders);
+        ILogProvider[] providers = [.. logProviders];
+        HashSet<Guid> providerIds = [];
+        foreach (ILogProvider provider in providers)
+        {
+            if (provider.ProviderId == Guid.Empty)
+            {
+                throw new InvalidOperationException("A registered logging provider has an empty ProviderId.");
+            }
+
+            if (!providerIds.Add(provider.ProviderId))
+            {
+                throw new InvalidOperationException(
+                    $"Multiple registered logging providers use ProviderId '{provider.ProviderId}'.");
+            }
+        }
+
+        return providers;
     }
 
 

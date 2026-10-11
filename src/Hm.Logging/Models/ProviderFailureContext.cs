@@ -11,9 +11,13 @@
 public sealed record ProviderFailureContext
 {
     /// <summary>
-    /// Gets the type of the provider that generated the failure.
+    /// Gets the identifier of the registered provider instance that generated the failure.
     /// </summary>
-    public required Type ProviderType { get; init; }
+    /// <remarks>
+    /// This value matches <see cref="Abstractions.ILogProvider.ProviderId"/> and can distinguish multiple registered
+    /// instances that use the same implementation type.
+    /// </remarks>
+    public required Guid ProviderId { get; init; }
 
     /// <summary>
     /// Gets the exception thrown by the provider.

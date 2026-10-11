@@ -344,7 +344,7 @@ public sealed class LoggerServiceTests
 
         // Assert
         capturedContext.Should().NotBeNull();
-        capturedContext.ProviderType.Should().Be(failingProvider.GetType());
+        capturedContext.ProviderId.Should().Be(failingProvider.ProviderId);
 
         capturedContext.Exception.Should()
             .BeOfType<InvalidOperationException>();
@@ -520,7 +520,7 @@ public sealed class LoggerServiceTests
     public async Task LogAsync_ShouldInheritParentScopeValues_WhenChildScopeDoesNotOverride()
     {
         // Arrange
-        Mock<ILogProvider> providerMock = new();
+        Mock<ILogProvider> providerMock = CreateProviderMock();
 
         LogEntry? capturedEntry = null;
 
@@ -561,7 +561,7 @@ public sealed class LoggerServiceTests
     public async Task LogAsync_ShouldAllowChildScopeToOverrideParentScopeValues()
     {
         // Arrange
-        Mock<ILogProvider> providerMock = new();
+        Mock<ILogProvider> providerMock = CreateProviderMock();
 
         LogEntry? capturedEntry = null;
 
@@ -603,7 +603,7 @@ public sealed class LoggerServiceTests
     public async Task LogAsync_ShouldAllowLogEntryValuesToOverrideNestedScopes()
     {
         // Arrange
-        Mock<ILogProvider> providerMock = new();
+        Mock<ILogProvider> providerMock = CreateProviderMock();
 
         LogEntry? capturedEntry = null;
 
@@ -648,7 +648,7 @@ public sealed class LoggerServiceTests
     public async Task LogAsync_ShouldMergeMetadataAcrossNestedScopes()
     {
         // Arrange
-        Mock<ILogProvider> providerMock = new();
+        Mock<ILogProvider> providerMock = CreateProviderMock();
 
         LogEntry? capturedEntry = null;
 
@@ -693,7 +693,7 @@ public sealed class LoggerServiceTests
     public async Task LogAsync_ShouldRestoreParentScope_WhenChildScopeIsDisposed()
     {
         // Arrange
-        Mock<ILogProvider> providerMock = new();
+        Mock<ILogProvider> providerMock = CreateProviderMock();
 
         List<LogEntry> capturedEntries = [];
 
@@ -791,7 +791,7 @@ public sealed class LoggerServiceTests
         // Arrange
         CancellationToken receivedToken = default;
 
-        Mock<ILogProvider> providerMock = new();
+        Mock<ILogProvider> providerMock = CreateProviderMock();
 
         providerMock
             .Setup(x => x.WriteAsync(
@@ -844,6 +844,252 @@ public sealed class LoggerServiceTests
         await action.Should().ThrowAsync<OperationCanceledException>();
     }
 
+    [Fact]
+    public async Task LogAsync_ShouldDispatchToAllProviders_WhenTargetSelectionIsEmpty()
+    {
+        FakeLogProvider firstProvider = new();
+        FakeLogProvider secondProvider = new();
+        ILoggerService logger = CreateLoggerService(providers: [firstProvider, secondProvider]);
+
+        await logger.LogAsync(
+            LogEntry.Info("All providers"),
+            targetProviders: [],
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        firstProvider.Entries.Should().ContainSingle();
+        secondProvider.Entries.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldPreservePositionalNullFailureCallbackCall()
+    {
+        FakeLogProvider provider = new();
+        ILoggerService logger = CreateLoggerService(providers: provider);
+
+        await logger.LogAsync(
+            LogEntry.Info("Legacy overload"),
+            null,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        provider.Entries.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldDispatchToAllProviders_WhenTargetSelectionIsNull()
+    {
+        FakeLogProvider firstProvider = new();
+        FakeLogProvider secondProvider = new();
+        ILoggerService logger = CreateLoggerService(providers: [firstProvider, secondProvider]);
+
+        await logger.LogAsync(
+            LogEntry.Info("All providers"),
+            targetProviders: null,
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        firstProvider.Entries.Should().ContainSingle();
+        secondProvider.Entries.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldDispatchOnlyToSelectedProvider()
+    {
+        FakeLogProvider selectedProvider = new();
+        FakeLogProvider unselectedProvider = new();
+        ILoggerService logger = CreateLoggerService(providers: [selectedProvider, unselectedProvider]);
+
+        await logger.LogAsync(
+            LogEntry.Info("Selected provider"),
+            targetProviders: [selectedProvider.ProviderId],
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        selectedProvider.Entries.Should().ContainSingle();
+        unselectedProvider.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldSelectMultipleInstancesOfSameImplementationIndependently()
+    {
+        FakeLogProvider firstSelectedProvider = new();
+        FakeLogProvider secondSelectedProvider = new();
+        FakeLogProvider unselectedProvider = new();
+        ILoggerService logger = CreateLoggerService(
+            providers: [firstSelectedProvider, secondSelectedProvider, unselectedProvider]);
+
+        await logger.LogAsync(
+            LogEntry.Info("Selected provider instances"),
+            targetProviders: [firstSelectedProvider.ProviderId, secondSelectedProvider.ProviderId],
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        firstSelectedProvider.Entries.Should().ContainSingle();
+        secondSelectedProvider.Entries.Should().ContainSingle();
+        unselectedProvider.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldNotDispatchTwice_WhenTargetIdentifierIsDuplicated()
+    {
+        FakeLogProvider provider = new();
+        ILoggerService logger = CreateLoggerService(providers: provider);
+
+        await logger.LogAsync(
+            LogEntry.Info("De-duplicated provider"),
+            targetProviders: [provider.ProviderId, provider.ProviderId],
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        provider.Entries.Should().ContainSingle();
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldRejectUnknownSelectionBeforeDispatchWithoutInvokingFailureCallback()
+    {
+        FakeLogProvider firstProvider = new();
+        FakeLogProvider secondProvider = new();
+        ILoggerService logger = CreateLoggerService(providers: [firstProvider, secondProvider]);
+        int callbackCount = 0;
+
+        Func<Task> action = () => logger.LogAsync(
+            LogEntry.Info("Invalid selection"),
+            targetProviders: [firstProvider.ProviderId, Guid.NewGuid()],
+            providerFailureCallback: (_, _) =>
+            {
+                _ = Interlocked.Increment(ref callbackCount);
+                return Task.CompletedTask;
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        (await action.Should().ThrowAsync<ArgumentException>())
+            .Which.ParamName.Should().Be("targetProviders");
+        firstProvider.Entries.Should().BeEmpty();
+        secondProvider.Entries.Should().BeEmpty();
+        callbackCount.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldRejectEmptyTargetIdentifierBeforeDispatch()
+    {
+        FakeLogProvider provider = new();
+        ILoggerService logger = CreateLoggerService(providers: provider);
+
+        Func<Task> action = () => logger.LogAsync(
+            LogEntry.Info("Invalid empty selection"),
+            targetProviders: [Guid.Empty],
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        (await action.Should().ThrowAsync<ArgumentException>())
+            .Which.ParamName.Should().Be("targetProviders");
+        provider.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void LoggerService_ShouldRejectRegisteredProviderWithEmptyIdentifier()
+    {
+        FakeLogProvider provider = new(Guid.Empty);
+
+        Action action = () => CreateLoggerService(providers: provider);
+
+        action.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*empty ProviderId*");
+    }
+
+    [Fact]
+    public void LoggerService_ShouldRejectConflictingRegisteredProviderIdentifiers()
+    {
+        var providerId = Guid.NewGuid();
+        FakeLogProvider firstProvider = new(providerId);
+        FakeLogProvider secondProvider = new(providerId);
+
+        Action action = () => CreateLoggerService(providers: [firstProvider, secondProvider]);
+
+        action.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage($"*{providerId}*");
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldReportSelectedProviderIdentityAndContinueAfterFailure()
+    {
+        FakeLogProvider failingProvider = new() { ThrowException = true };
+        FakeLogProvider successfulProvider = new();
+        FakeLogProvider unselectedProvider = new();
+        ILoggerService logger = CreateLoggerService(
+            providers: [failingProvider, successfulProvider, unselectedProvider]);
+        ProviderFailureContext? failureContext = null;
+
+        await logger.LogAsync(
+            LogEntry.Error("Selective failure"),
+            targetProviders: [failingProvider.ProviderId, successfulProvider.ProviderId],
+            providerFailureCallback: (context, _) =>
+            {
+                failureContext = context;
+                return Task.CompletedTask;
+            },
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        failureContext.Should().NotBeNull();
+        failureContext.ProviderId.Should().Be(failingProvider.ProviderId);
+        failureContext.LogEntry.Message.Should().Be("Selective failure");
+        successfulProvider.Entries.Should().ContainSingle();
+        unselectedProvider.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldPreserveNormalizationAndScopeSemanticsForSelectedProvider()
+    {
+        FakeLogProvider selectedProvider = new();
+        FakeLogProvider unselectedProvider = new();
+        ILoggerService logger = CreateLoggerService(providers: [selectedProvider, unselectedProvider]);
+        using IDisposable scope = logger.BeginScope(new LogContext
+        {
+            Source = "scope-source",
+            Metadata = ImmutableDictionary<string, object>.Empty.Add("scope", "value")
+        });
+
+        await logger.LogAsync(
+            LogEntry.Info("  normalized selective entry  "),
+            targetProviders: [selectedProvider.ProviderId],
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        selectedProvider.Entries.Should().ContainSingle();
+        selectedProvider.Entries[0].Message.Should().Be("normalized selective entry");
+        selectedProvider.Entries[0].Source.Should().Be("scope-source");
+        selectedProvider.Entries[0].Metadata!["scope"].Should().Be("value");
+        unselectedProvider.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldPreserveSeverityFilteringForSelectedProvider()
+    {
+        FakeLogProvider selectedProvider = new();
+        ILoggerService logger = CreateLoggerService(
+            options => options.MinimumLevel = LogLevel.Warning,
+            selectedProvider);
+
+        await logger.LogAsync(
+            LogEntry.Info("Filtered selective entry"),
+            targetProviders: [selectedProvider.ProviderId],
+            cancellationToken: TestContext.Current.CancellationToken);
+
+        selectedProvider.Entries.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task LogAsync_ShouldPropagateCancellationFromSelectedProvider()
+    {
+        using var cancellationTokenSource = new CancellationTokenSource();
+        var selectedProvider = new CancellationLogProvider(cancellationTokenSource);
+        FakeLogProvider unselectedProvider = new();
+        ILoggerService logger = CreateLoggerService(providers: [selectedProvider, unselectedProvider]);
+
+        Func<Task> action = () => logger.LogAsync(
+            LogEntry.Info("Selective cancellation"),
+            targetProviders: [selectedProvider.ProviderId],
+            cancellationToken: cancellationTokenSource.Token);
+
+        await action.Should().ThrowAsync<OperationCanceledException>();
+        unselectedProvider.Entries.Should().BeEmpty();
+    }
+
     private static ILoggerService CreateLoggerService(
         Action<LoggingOptions>? configure = null,
         params ILogProvider[] providers)
@@ -863,5 +1109,12 @@ public sealed class LoggerServiceTests
 
         return serviceProvider
             .GetRequiredService<ILoggerService>();
+    }
+
+    private static Mock<ILogProvider> CreateProviderMock(Guid? providerId = null)
+    {
+        var providerMock = new Mock<ILogProvider>();
+        providerMock.SetupGet(provider => provider.ProviderId).Returns(providerId ?? Guid.NewGuid());
+        return providerMock;
     }
 }

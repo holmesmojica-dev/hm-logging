@@ -3,8 +3,10 @@ using Hm.Logging.Models;
 
 namespace Hm.Logging.Tests.Mocks;
 
-internal sealed class FakeLogProvider : ILogProvider
+internal sealed class FakeLogProvider(Guid? providerId = null) : ILogProvider
 {
+    public Guid ProviderId { get; } = providerId ?? Guid.NewGuid();
+
     public List<LogEntry> Entries { get; } = [];
 
     public bool ThrowException { get; set; }
