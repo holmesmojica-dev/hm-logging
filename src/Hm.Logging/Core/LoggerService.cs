@@ -170,17 +170,17 @@ internal sealed class LoggerService : ILoggerService
         ArgumentNullException.ThrowIfNull(logProviders);
         ILogProvider[] providers = [.. logProviders];
         HashSet<Guid> providerIds = [];
-        foreach (ILogProvider provider in providers)
+
+        foreach (Guid providerId in providers.Select(provider => provider.ProviderId))
         {
-            if (provider.ProviderId == Guid.Empty)
+            if (providerId == Guid.Empty)
             {
                 throw new InvalidOperationException("A registered logging provider has an empty ProviderId.");
             }
 
-            if (!providerIds.Add(provider.ProviderId))
+            if (!providerIds.Add(providerId))
             {
-                throw new InvalidOperationException(
-                    $"Multiple registered logging providers use ProviderId '{provider.ProviderId}'.");
+                throw new InvalidOperationException($"Multiple registered logging providers use ProviderId '{providerId}'.");
             }
         }
 
