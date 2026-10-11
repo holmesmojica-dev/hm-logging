@@ -9,9 +9,9 @@ namespace Hm.Logging.Abstractions;
 /// Multiple logging providers can be registered simultaneously.
 ///
 /// <para>
-/// The logging pipeline distributes each log entry to all registered providers,
-/// allowing independent processing across different logging targets such as
-/// files, databases, consoles, gRPC transports, or observability systems.
+/// By default, the logging pipeline distributes each log entry to all registered providers. Consumers may also
+/// select registered instances by <see cref="ProviderId"/>, allowing independent processing across different
+/// logging targets such as files, databases, consoles, gRPC transports, or observability systems.
 /// </para>
 ///
 /// <para>
@@ -28,6 +28,16 @@ namespace Hm.Logging.Abstractions;
 /// </remarks>
 public interface ILogProvider
 {
+    /// <summary>
+    /// Gets the stable identifier of this registered provider instance.
+    /// </summary>
+    /// <remarks>
+    /// The identifier distinguishes provider instances rather than implementation types, so multiple instances of
+    /// the same provider can be selected independently. It must be nonempty and unique among all providers
+    /// registered in the same HM Logging pipeline.
+    /// </remarks>
+    Guid ProviderId { get; }
+
     /// <summary>
     /// Processes a log entry asynchronously.
     /// </summary>

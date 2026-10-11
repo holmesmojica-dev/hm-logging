@@ -5,3 +5,4 @@ hooks/pre-commit text eol=lf
 *.psm1 text eol=lf
 *.props text eol=lf
 *.yml text eol=lf
+README.md text eol=lf

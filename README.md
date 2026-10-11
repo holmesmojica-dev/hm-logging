@@ -513,6 +513,80 @@ Providers are executed sequentially in registration order while preserving:
 - async semantics,
 - and immutable processing.
 
+### Provider identity
+
+Every registered `ILogProvider` instance has a stable, nonempty `ProviderId`. The identifier belongs to the
+instance, not its implementation type, so two instances of the same provider can be addressed independently.
+
+Provider packages own their registration extensions. A custom provider registered directly through .NET DI can
+expose a caller-supplied identifier as follows:
+
+```csharp
+public sealed class AuditProvider(Guid providerId) : ILogProvider
+{
+    public Guid ProviderId { get; } = providerId != Guid.Empty
+        ? providerId
+        : throw new ArgumentException("ProviderId cannot be empty.", nameof(providerId));
+
+    public Task WriteAsync(LogEntry entry, CancellationToken cancellationToken = default)
+    {
+        // Send the normalized entry to the provider destination.
+        return Task.CompletedTask;
+    }
+}
+
+Guid primaryAuditProviderId = Guid.Parse("bf3183df-d258-4b97-b6b8-89f4f9d6626c");
+Guid restrictedAuditProviderId = Guid.Parse("80346a91-cf19-4e4e-adac-012ee06fb194");
+
+builder.Services.AddSingleton<ILogProvider>(new AuditProvider(primaryAuditProviderId));
+builder.Services.AddSingleton<ILogProvider>(new AuditProvider(restrictedAuditProviderId));
+```
+
+Registered identifiers must be unique and cannot be `Guid.Empty`. Conflicting identities are rejected when Core
+constructs the logging pipeline.
+
+### Default and selective dispatch
+
+The existing overload dispatches to every registered provider:
+
+```csharp
+await logger.LogAsync(LogEntry.Info("Order accepted"));
+```
+
+A nonempty target collection dispatches exclusively to the matching instances:
+
+```csharp
+await logger.LogAsync(
+    LogEntry.Info("Audit record created"),
+    targetProviders: [primaryAuditProviderId]);
+
+await logger.LogAsync(
+    LogEntry.Warning("Restricted operation requested"),
+    targetProviders: [primaryAuditProviderId, restrictedAuditProviderId]);
+```
+
+A null or empty `targetProviders` collection retains the default all-provider behavior. Repeated identifiers are
+de-duplicated and never cause repeated writes.
+
+Core validates the complete selection before dispatch. `Guid.Empty` or an unregistered identifier throws
+`ArgumentException`, invokes no provider, and does not invoke `ProviderFailureCallback`:
+
+```csharp
+// This identifier does not belong to any registered provider.
+Guid requestedProviderId = Guid.NewGuid();
+
+try
+{
+    await logger.LogAsync(
+        LogEntry.Info("Targeted event"),
+        targetProviders: [requestedProviderId]);
+}
+catch (ArgumentException exception)
+{
+    Console.WriteLine(exception.Message);
+}
+```
+
 ---
 
 ## Provider Isolation
@@ -540,7 +614,7 @@ await logger.LogAsync(
     providerFailureCallback: async (context, cancellationToken) =>
     {
         Console.WriteLine(
-            $"Provider failed: {context.ProviderType.Name}");
+            $"Provider failed: {context.ProviderId}");
 
         Console.WriteLine(context.Exception.Message);
 
