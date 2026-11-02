@@ -123,7 +123,15 @@ builder.Services.AddHmLogging(options =>
     options.MinimumLevel = LogLevel.Information;
     options.MaxMessageLength = 4000;
 });
+
+// Register an application-selected ILogProvider implementation as a destination.
+builder.Services.AddSingleton<ILogProvider>(provider);
 ```
+
+`AddHmLogging()` registers and configures HM Logging Core, but it does not automatically register a logging
+destination. Register at least one `ILogProvider` implementation through dependency injection before resolving
+`ILoggerService`. Resolving `ILoggerService` without any registered provider is an invalid configuration and throws
+`InvalidOperationException` during service construction.
 
 ---
 
@@ -501,12 +509,8 @@ This behavior ensures predictable contextual propagation across asynchronous exe
 
 ## Multi-Provider Orchestration
 
-Hm.Logging supports multiple providers simultaneously.
-
-Example providers:
-- File provider
-- Database provider
-- Console provider
+Hm.Logging requires at least one registered `ILogProvider` and supports multiple providers simultaneously. A pipeline
+with no registered provider is invalid and throws `InvalidOperationException` when `ILoggerService` is resolved.
 
 Providers are executed sequentially in registration order while preserving:
 - ordering behavior,

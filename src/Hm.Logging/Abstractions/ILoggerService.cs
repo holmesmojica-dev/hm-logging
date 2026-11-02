@@ -35,6 +35,12 @@ namespace Hm.Logging.Abstractions;
 /// the values defined in <see cref="LogEntry"/> take precedence,
 /// including TraceId, CorrelationId, Source, and Metadata values.
 /// </para>
+///
+/// <para>
+/// At least one <see cref="ILogProvider"/> implementation must be registered through dependency injection before
+/// this service is resolved. Resolving <see cref="ILoggerService"/> without a registered provider is an invalid
+/// configuration and causes service construction to throw <see cref="InvalidOperationException"/>.
+/// </para>
 /// </remarks>
 public interface ILoggerService
 {

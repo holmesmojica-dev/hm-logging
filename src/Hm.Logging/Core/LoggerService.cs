@@ -169,6 +169,13 @@ internal sealed class LoggerService : ILoggerService
     {
         ArgumentNullException.ThrowIfNull(logProviders);
         ILogProvider[] providers = [.. logProviders];
+
+        if (providers.Length == 0)
+        {
+            throw new InvalidOperationException(
+                "At least one logging provider must be registered before LoggerService can be instantiated.");
+        }
+
         HashSet<Guid> providerIds = [];
 
         foreach (Guid providerId in providers.Select(provider => provider.ProviderId))
