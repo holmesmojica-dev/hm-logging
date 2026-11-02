@@ -736,21 +736,50 @@ public sealed class LoggerServiceTests
     }
 
     [Fact]
-    public async Task LogAsync_ShouldExecuteSuccessfully_WhenNoProvidersAreRegistered()
+    public void LoggerService_ShouldRejectNullProviderCollection()
     {
-        // Arrange
-        ILoggerService logger = CreateLoggerService();
+        ServiceCollection services = new();
+        services.AddHmLogging();
+        services.AddSingleton<IEnumerable<ILogProvider>>(_ => null!);
 
-        var entry = LogEntry.Info("No providers");
+        using ServiceProvider serviceProvider = services.BuildServiceProvider();
 
-        // Act
-        Func<Task> action = async () =>
-            await logger.LogAsync(
-                entry,
-                cancellationToken: CancellationToken.None);
+        Action action = () => serviceProvider.GetRequiredService<ILoggerService>();
 
-        // Assert
-        await action.Should().NotThrowAsync();
+        action.Should()
+            .Throw<ArgumentNullException>()
+            .WithParameterName("logProviders");
+    }
+
+    [Fact]
+    public void LoggerService_ShouldRejectEmptyProviderCollection()
+    {
+        Action action = () => CreateLoggerService();
+
+        action.Should()
+            .Throw<InvalidOperationException>()
+            .WithMessage("*at least one logging provider must be registered*");
+    }
+
+    [Fact]
+    public void LoggerService_ShouldConstructWithOneValidProvider()
+    {
+        FakeLogProvider provider = new();
+
+        ILoggerService logger = CreateLoggerService(providers: provider);
+
+        logger.Should().NotBeNull();
+    }
+
+    [Fact]
+    public void LoggerService_ShouldConstructWithMultipleValidProviders()
+    {
+        FakeLogProvider firstProvider = new();
+        FakeLogProvider secondProvider = new();
+
+        ILoggerService logger = CreateLoggerService(providers: [firstProvider, secondProvider]);
+
+        logger.Should().NotBeNull();
     }
 
     [Fact]

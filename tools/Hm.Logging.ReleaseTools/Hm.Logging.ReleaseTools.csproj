@@ -8,6 +8,7 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NuGet.Packaging" Version="7.9.0" PrivateAssets="all" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="8.0.2" PrivateAssets="all" />
     <InternalsVisibleTo Include="Hm.Logging.Tests" />
   </ItemGroup>
 </Project>

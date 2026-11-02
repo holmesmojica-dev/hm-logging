@@ -24,8 +24,11 @@ public static class ServiceCollectionExtensions
     /// The updated <see cref="IServiceCollection"/> instance.
     /// </returns>
     /// <remarks>
-    /// Custom logging providers can be registered independently
-    /// through dependency injection using <see cref="ILogProvider"/>.
+    /// This method registers HM Logging Core services and configuration, but it does not register a logging
+    /// destination. At least one <see cref="ILogProvider"/> implementation must be registered independently through
+    /// dependency injection before <see cref="ILoggerService"/> is resolved. Resolving the service without a
+    /// registered provider is an invalid configuration and causes service construction to throw
+    /// <see cref="InvalidOperationException"/>.
     ///
     /// <para>
     /// Multiple providers can coexist simultaneously,
